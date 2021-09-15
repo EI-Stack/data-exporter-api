@@ -3,6 +3,10 @@ import os
 
 class Config:
     EKS_URL = "https://ifp-organizer-dmd-eks009.sa.wise-paas.com/graphql"
+    AFS_URL = "http://api-afs-stage2-eks006.sa.wise-paas.com"
+    S3_ENDPOINT = "ai-storage.amp.iii-ei-stack.com"
+    S3_ACCESS_KEY = "Bknu1IKIfK5it1XnseDh4GsuzwhAG1JF"
+    S3_SECRET_KEY = "mSM8eEYrT57votdHj7BPmZdxvN5hSb3I"
 
     @staticmethod
     def init_app(app):
