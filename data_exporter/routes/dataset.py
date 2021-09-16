@@ -56,7 +56,7 @@ def get_dataset_file(parameter_id):
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
+    variables = {"id": parameter_id, "n": pow(2, 1) - 1}  # pow(2, 31) - 1
     r = DataSetWebClient().get_dataset_with_graphql(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
@@ -88,8 +88,10 @@ def get_dataset_file(parameter_id):
     res = DataSetWebClient().get_dataset_information()
     data = json.loads(res.text)
     exist = False
+    dataset_id = ""
     for item in data.get("resources"):
         if item.get("name") == data_set_name:
+            dataset_id = item.get("uuid")
             f = DataSetWebClient().get_dataset_config(item.get("uuid"))
             payload = json.loads(f.text)
             for data in payload.get("firehose").get("data").get("buckets"):
@@ -125,12 +127,13 @@ def get_dataset_file(parameter_id):
             "sample_data": "",
             "datasource": "s3-firehose",
         }
-        DataSetWebClient().post_dataset_bucket(payload=payload)
+        r = DataSetWebClient().post_dataset_bucket(payload=payload)
+        dataset_id = json.loads(r.text).get("uuid")
     data_dict = {
         "data": {
             "bucket": S3_bucket_name,
             "file": f"{file_name}.csv",
-            "dataset": data_set_name,
+            "dataset_id": dataset_id,
         }
     }
     return data_dict
