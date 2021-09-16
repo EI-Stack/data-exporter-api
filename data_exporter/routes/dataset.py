@@ -1,3 +1,5 @@
+from uuid import uuid4
+from datetime import datetime
 from flask import Blueprint, request, current_app
 from data_exporter import mqtt
 from data_exporter.utils.mqtt_topic import MqttTopicHandler
@@ -5,6 +7,7 @@ from io import BytesIO
 import json
 import pandas as pd
 
+from data_exporter.utils.parameter_helper import transfer_to_big_parameter_id
 from data_exporter.utils.web_client import DataSetWebClient
 
 print(mqtt.broker_url)
@@ -42,24 +45,42 @@ print("mqtt_set")
 # mqtt.client.loop_forever()
 # mqtt.client.loop()
 
+S3_bucket_name = "test-grant"
+
 
 @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
 def get_dataset_file(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
+    parameter_id = transfer_to_big_parameter_id(parameter_id.split("_")[-1])
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    variables = {"id": parameter_id, "n": 10}  # pow(2, 31) - 1
+    variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
     r = DataSetWebClient().get_dataset_with_graphql(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
+    normalized["savedAt"] = pd.to_datetime(
+        normalized["savedAt"], format="%Y-%m-%dT%H:%M:%S.%fZ"
+    )
+    normalized["savedAt"] = normalized["savedAt"].apply(
+        lambda d: int(datetime.timestamp(d) * 1000)
+    )
+    normalized["time"] = pd.to_datetime(
+        normalized["time"], format="%Y-%m-%dT%H:%M:%S.%fZ"
+    )
+    normalized["time"] = normalized["time"].apply(
+        lambda d: d.strftime("%Y/%m/%d %p %H:%M:%S")
+        .replace("AM", "上午")
+        .replace("PM", "下午")
+    )
     csv_bytes = normalized.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     client = DataSetWebClient.get_minio_client()
+    file_name = str(uuid4())
     client.put_object(
-        "test-grant",
-        "test456-grant.csv",
+        S3_bucket_name,
+        f"{file_name}.csv",
         data=csv_buffer,
         length=len(csv_bytes),
         content_type="application/csv",
@@ -67,44 +88,49 @@ def get_dataset_file(parameter_id):
     res = DataSetWebClient().get_dataset_information()
     data = json.loads(res.text)
     exist = False
-    for item in data.get('resources'):
-        if item.get('name') == data_set_name:
-            f = DataSetWebClient().get_dataset_config(item.get('uuid'))
+    for item in data.get("resources"):
+        if item.get("name") == data_set_name:
+            f = DataSetWebClient().get_dataset_config(item.get("uuid"))
             payload = json.loads(f.text)
-            for data in payload.get('firehose').get('data').get('buckets'):
-                if data.get('bucket') == "test-grant":
-                    files = data.get('blobs').get('files')
-                    files.append('test456-grant.csv')
+            for data in payload.get("firehose").get("data").get("buckets"):
+                if data.get("bucket") == S3_bucket_name:
+                    files = data.get("blobs").get("files")
+                    files.append(f"{file_name}.csv")
             # put file
-            DataSetWebClient().put_dataset_config(dataset_uuid=item.get('uuid'), payload=payload)
+            DataSetWebClient().put_dataset_config(
+                dataset_uuid=item.get("uuid"), payload=payload
+            )
             exist = True
             break
     if not exist:
         payload = {
-                "name": data_set_name,
-                "firehose": {
-                    "type": "s3-firehose",
-                    "data": {
-                        "dbType": "external",
-                        "serviceName": "",
-                        "serviceKey": "",
-                        "endPoint": f"https://{current_app.config['S3_ENDPOINT']}:443",
-                        "accessKey": current_app.config['S3_ACCESS_KEY'],
-                        "secretAccessKey": current_app.config['S3_SECRET_KEY'],
-                        "buckets": [
-                            {
-                                "blobs": {
-                                    "files": ["test456-grant.csv"],
-                                    "folders": []
-                                },
-                                "bucket": "test-grant"
-                            }
-                        ],
-                    },
+            "name": data_set_name,
+            "firehose": {
+                "type": "s3-firehose",
+                "data": {
+                    "dbType": "external",
+                    "serviceName": "",
+                    "serviceKey": "",
+                    "endPoint": f"https://{current_app.config['S3_ENDPOINT']}:443",
+                    "accessKey": current_app.config["S3_ACCESS_KEY"],
+                    "secretAccessKey": current_app.config["S3_SECRET_KEY"],
+                    "buckets": [
+                        {
+                            "blobs": {"files": [f"{file_name}.csv"], "folders": []},
+                            "bucket": S3_bucket_name,
+                        }
+                    ],
                 },
-                "sample_data": "",
-                "datasource": "s3-firehose",
-            }
-        f = DataSetWebClient().post_dataset_bucket(payload=payload)
-        print(f.text)
-    return {}
+            },
+            "sample_data": "",
+            "datasource": "s3-firehose",
+        }
+        DataSetWebClient().post_dataset_bucket(payload=payload)
+    data_dict = {
+        "data": {
+            "bucket": S3_bucket_name,
+            "file": f"{file_name}.csv",
+            "dataset": data_set_name,
+        }
+    }
+    return data_dict

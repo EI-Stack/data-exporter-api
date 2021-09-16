@@ -6,7 +6,7 @@ from flask_mongoengine import MongoEngine
 mqtt = Mqtt()
 db = MongoEngine()
 # socketio = SocketIO()
-def create_app(config_name='development'):
+def create_app(config_name="development"):
     app = Flask(__name__)
     with app.app_context():
         app.config.from_object(config[config_name])
@@ -17,5 +17,6 @@ def create_app(config_name='development'):
         mqtt.init_app(app)
         db.init_app(app)
         from . import routes
+
         routes.init_app(app)
     return app

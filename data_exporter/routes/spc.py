@@ -2,7 +2,7 @@ from flask import Blueprint, request, current_app
 import requests
 import json
 
-spc_bp = Blueprint('spc_bp', __name__)
+spc_bp = Blueprint("spc_bp", __name__)
 
 headers = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
 
@@ -47,7 +47,7 @@ def get_data_with_date(parameter_id):
     variables.update({"from": start, "to": end})
     try:
         r = requests.post(
-            current_app.config['EKS_URL'],
+            current_app.config["EKS_URL"],
             json={"query": query_with_date, "variables": variables},
             headers=headers,
         )

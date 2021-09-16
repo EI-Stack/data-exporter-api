@@ -3,8 +3,8 @@ import json
 from minio import Minio
 from flask import current_app
 
-URL = current_app.config['AFS_URL']
-INSTANCE_ID = '2174f980-0fc1-5b88-913b-2db9c1deccc5'
+URL = current_app.config["AFS_URL"]
+INSTANCE_ID = "2174f980-0fc1-5b88-913b-2db9c1deccc5"
 HEADERS = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
 query_with_date = """
     query parameter($id: ID!, $from: DateTime!, $to: DateTime!) {
@@ -36,24 +36,29 @@ S3_bucket_name = "test-grant"
 
 
 def get_sso_token():
-    r = requests.get("https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token")
+    r = requests.get(
+        "https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token"
+    )
     result = json.loads(r.text)
     token = result.get("Authorization")
     return token
 
 
 class DataSetWebClient:
-
     def __init__(self):
-        self.headers = {"Authorization": get_sso_token(), "accept": "application/json", "content-type": "application/json"}
+        self.headers = {
+            "Authorization": get_sso_token(),
+            "accept": "application/json",
+            "content-type": "application/json",
+        }
 
     @staticmethod
     def get_minio_client():
         try:
             client = Minio(
-                current_app.config['S3_ENDPOINT'],
-                access_key=current_app.config['S3_ACCESS_KEY'],
-                secret_key=current_app.config['S3_SECRET_KEY'],
+                current_app.config["S3_ENDPOINT"],
+                access_key=current_app.config["S3_ACCESS_KEY"],
+                secret_key=current_app.config["S3_SECRET_KEY"],
             )
         except Exception as e:
             raise ValueError("client minio", e)
@@ -78,7 +83,9 @@ class DataSetWebClient:
 
     def get_dataset_information(self):
         try:
-            r = requests.get(f"{URL}/v2/instances/{INSTANCE_ID}/datasets", headers=self.headers)
+            r = requests.get(
+                f"{URL}/v2/instances/{INSTANCE_ID}/datasets", headers=self.headers
+            )
         except Exception as e:
             raise e
         return r
@@ -87,7 +94,7 @@ class DataSetWebClient:
         try:
             r = requests.get(
                 f"{URL}/v2/instances/{INSTANCE_ID}/datasets/{dataset_uuid}",
-                headers=self.headers
+                headers=self.headers,
             )
         except Exception as e:
             raise e
@@ -98,7 +105,7 @@ class DataSetWebClient:
             r = requests.put(
                 f"{URL}/v2/instances/{INSTANCE_ID}/datasets/{dataset_uuid}",
                 json=payload,
-                headers=self.headers
+                headers=self.headers,
             )
         except Exception as e:
             raise e
@@ -109,10 +116,8 @@ class DataSetWebClient:
             r = requests.post(
                 f"{URL}/v2/instances/{INSTANCE_ID}/datasets",
                 json=payload,
-                headers=self.headers
+                headers=self.headers,
             )
         except Exception as e:
             raise e
         return r
-
-
