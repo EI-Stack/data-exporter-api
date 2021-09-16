@@ -32,33 +32,31 @@ query_with_limit = """
   }
 }
 """
-body = {"username": "she30338@gmail.com", "password": "Jk840118!"}
 S3_bucket_name = "test-grant"
 
 
-def get_token():
-    r = requests.post(
-        f"http://api-sso-ensaas.sa.wise-paas.com/v4.0/auth/native", json=body
-    )
+def get_sso_token():
+    r = requests.get("https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token")
     result = json.loads(r.text)
-    token = result.get("tokenType") + " " + result.get("accessToken")
+    token = result.get("Authorization")
     return token
 
 
 class DataSetWebClient:
 
     def __init__(self):
-        self.headers = {"Authorization": get_token(), "accept": "application/json", "content-type": "application/json"}
+        self.headers = {"Authorization": get_sso_token(), "accept": "application/json", "content-type": "application/json"}
 
     @staticmethod
     def get_minio_client():
-        print(current_app.config['S3_ENDPOINT'])
-        client = Minio(
-            current_app.config['S3_ENDPOINT'],
-            access_key=current_app.config['S3_ACCESS_KEY'],
-            secret_key=current_app.config['S3_SECRET_KEY'],
-        )
-        # print(client.list_buckets())
+        try:
+            client = Minio(
+                current_app.config['S3_ENDPOINT'],
+                access_key=current_app.config['S3_ACCESS_KEY'],
+                secret_key=current_app.config['S3_SECRET_KEY'],
+            )
+        except Exception as e:
+            raise ValueError("client minio", e)
         found = client.bucket_exists(S3_bucket_name)
         if not found:
             client.make_bucket(S3_bucket_name)
