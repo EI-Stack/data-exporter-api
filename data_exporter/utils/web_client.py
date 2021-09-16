@@ -7,7 +7,7 @@ URL = current_app.config["AFS_URL"]
 INSTANCE_ID = "2174f980-0fc1-5b88-913b-2db9c1deccc5"
 HEADERS = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
 query_with_date = """
-    query parameter($id: ID!, $from: DateTime!, $to: DateTime!) {
+    query parameter($id: ID! $from: DateTime!, $to: DateTime!) {
     parameter(id: $id){
             id
             _id
@@ -70,11 +70,23 @@ class DataSetWebClient:
         return client
 
     @staticmethod
-    def get_dataset_with_graphql(variables):
+    def get_dataset_with_graphql_by_limit(variables):
         try:
             r = requests.post(
                 current_app.config["EKS_URL"],
                 json={"query": query_with_limit, "variables": variables},
+                headers=HEADERS,
+            )
+        except Exception as e:
+            raise e
+        return r
+
+    @staticmethod
+    def get_dataset_with_graphql_by_date(variables):
+        try:
+            r = requests.post(
+                current_app.config["EKS_URL"],
+                json={"query": query_with_date, "variables": variables},
                 headers=HEADERS,
             )
         except Exception as e:

@@ -52,12 +52,12 @@ S3_bucket_name = "test-grant"
 def get_dataset_file(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
-    parameter_id = transfer_to_big_parameter_id(parameter_id.split("_")[-1])
+    parameter_id = transfer_to_big_parameter_id(parameter_id)
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
     variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
-    r = DataSetWebClient().get_dataset_with_graphql(variables)
+    r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
     normalized["savedAt"] = pd.to_datetime(
