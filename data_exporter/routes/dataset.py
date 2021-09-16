@@ -56,7 +56,7 @@ def get_dataset_file(parameter_id):
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    variables = {"id": parameter_id, "n": pow(2, 1) - 1}  # pow(2, 31) - 1
+    variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
     r = DataSetWebClient().get_dataset_with_graphql(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
