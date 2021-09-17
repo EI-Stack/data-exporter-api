@@ -8,6 +8,7 @@ import json
 import pandas as pd
 
 from data_exporter.utils.parameter_helper import transfer_to_big_parameter_id
+from data_exporter.utils.csv_value_helper import complement_csv_value
 from data_exporter.utils.web_client import DataSetWebClient
 
 print(mqtt.broker_url)
@@ -60,20 +61,7 @@ def get_dataset_file(parameter_id):
     r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
-    normalized["savedAt"] = pd.to_datetime(
-        normalized["savedAt"], format="%Y-%m-%dT%H:%M:%S.%fZ"
-    )
-    normalized["savedAt"] = normalized["savedAt"].apply(
-        lambda d: int(datetime.timestamp(d) * 1000)
-    )
-    normalized["time"] = pd.to_datetime(
-        normalized["time"], format="%Y-%m-%dT%H:%M:%S.%fZ"
-    )
-    normalized["time"] = normalized["time"].apply(
-        lambda d: d.strftime("%Y/%m/%d %p %H:%M:%S")
-        .replace("AM", "上午")
-        .replace("PM", "下午")
-    )
+    normalized = complement_csv_value(normalized)
     csv_bytes = normalized.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     client = DataSetWebClient.get_minio_client()
