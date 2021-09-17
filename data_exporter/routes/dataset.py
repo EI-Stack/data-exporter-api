@@ -65,7 +65,7 @@ def get_dataset_file(parameter_id):
     csv_bytes = normalized.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     client = DataSetWebClient.get_minio_client()
-    file_name = str(uuid4())
+    file_name = parameter_id + '.' + str(uuid4())[-9:-1]
     client.put_object(
         S3_bucket_name,
         f"{file_name}.csv",
