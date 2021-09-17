@@ -46,10 +46,13 @@ def get_data_with_limit(parameter_id):
     variables = {"id": parameter_id, "n": pow(2, 31) - 1}
     r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
-    normalized = pd.json_normalize(data, "limitToNthValues",)
+    normalized = pd.json_normalize(
+        data,
+        "limitToNthValues",
+    )
     normalized = complement_csv_value(normalized)
     normalized = normalized.tail(int(limit))
-    df_num = normalized['num']
+    df_num = normalized["num"]
     df_num = df_num.to_dict()
     values = [value for _, value in df_num.items()]
     return {"data": values}
