@@ -1,6 +1,6 @@
 from uuid import uuid4
 from datetime import datetime
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, jsonify
 from data_exporter import mqtt
 from data_exporter.utils.mqtt_topic import MqttTopicHandler
 from io import BytesIO
@@ -57,20 +57,25 @@ def get_dataset_file(parameter_id):
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    variables = {"id": parameter_id, "n": pow(2, 3) - 1}  # pow(2, 31) - 1
+    variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
     r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
     normalized = complement_csv_value(normalized)
+    if len(normalized.index) < 2880:
+        return jsonify(
+            {"message": "Data Exporter dataset is less than one month of information"},
+            406,
+        )
     columns = normalized.columns
-    if 'num' in columns:
-        target = 'num'
+    if "num" in columns:
+        target = "num"
     else:
-        target = 'value'
+        target = "value"
     csv_bytes = normalized.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     client = DataSetWebClient.get_minio_client(S3_bucket_name)
-    file_name = parameter_id + '.' + str(uuid4())[-9:-1]
+    file_name = parameter_id + "." + str(uuid4())[-9:-1]
     client.put_object(
         S3_bucket_name,
         f"{file_name}.csv",
@@ -127,7 +132,7 @@ def get_dataset_file(parameter_id):
             "bucket": S3_bucket_name,
             "file": f"{file_name}.csv",
             "dataset_id": dataset_id,
-            "target": target
+            "target": target,
         }
     }
     return data_dict
