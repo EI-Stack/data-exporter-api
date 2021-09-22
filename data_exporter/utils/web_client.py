@@ -32,7 +32,6 @@ query_with_limit = """
   }
 }
 """
-S3_bucket_name = "test-grant"
 
 
 def get_sso_token():
@@ -53,7 +52,7 @@ class DataSetWebClient:
         }
 
     @staticmethod
-    def get_minio_client():
+    def get_minio_client(bucket_name):
         try:
             client = Minio(
                 current_app.config["S3_ENDPOINT"],
@@ -62,11 +61,11 @@ class DataSetWebClient:
             )
         except Exception as e:
             raise ValueError("client minio", e)
-        found = client.bucket_exists(S3_bucket_name)
+        found = client.bucket_exists(bucket_name)
         if not found:
-            client.make_bucket(S3_bucket_name)
+            client.make_bucket(bucket_name)
         else:
-            print(f"Bucket '{S3_bucket_name}' already exists")
+            print(f"Bucket '{bucket_name}' already exists")
         return client
 
     @staticmethod

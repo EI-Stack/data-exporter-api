@@ -46,7 +46,7 @@ print("mqtt_set")
 # mqtt.client.loop_forever()
 # mqtt.client.loop()
 
-S3_bucket_name = "test-grant"
+S3_bucket_name = "data-exporter-file"
 
 
 @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
@@ -57,14 +57,19 @@ def get_dataset_file(parameter_id):
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
+    variables = {"id": parameter_id, "n": pow(2, 3) - 1}  # pow(2, 31) - 1
     r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
     normalized = complement_csv_value(normalized)
+    columns = normalized.columns
+    if 'num' in columns:
+        target = 'num'
+    else:
+        target = 'value'
     csv_bytes = normalized.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
-    client = DataSetWebClient.get_minio_client()
+    client = DataSetWebClient.get_minio_client(S3_bucket_name)
     file_name = parameter_id + '.' + str(uuid4())[-9:-1]
     client.put_object(
         S3_bucket_name,
@@ -122,6 +127,7 @@ def get_dataset_file(parameter_id):
             "bucket": S3_bucket_name,
             "file": f"{file_name}.csv",
             "dataset_id": dataset_id,
+            "target": target
         }
     }
     return data_dict
