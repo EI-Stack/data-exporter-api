@@ -72,7 +72,6 @@ def concat_split_datetime_dataset(date_list, parameter_id):
         r = DataSetWebClient.get_dataset_with_graphql_by_date(variables)
         data = pd.read_json(r.text)["data"]["parameter"]
         normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
-        print(normalized.index, date[0], date[1])
         normalized_all = pd.concat(
             [normalized_all, normalized], axis=0, ignore_index=True
         )

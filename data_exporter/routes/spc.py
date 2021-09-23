@@ -4,7 +4,7 @@ import pandas as pd
 from flask import Blueprint, request
 import json
 
-from data_exporter.utils.csv_value_helper import complement_csv_value
+from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
     split_datetime,
@@ -32,7 +32,8 @@ def get_data_with_date(parameter_id):
     end = datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%fZ")
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
-    df_num = normalized_all["num"]
+    target = check_target(normalized_all)
+    df_num = normalized_all[target]
     df_num = df_num.to_dict()
     values = [value for _, value in df_num.items()]
     return {"data": values}
@@ -50,9 +51,10 @@ def get_data_with_limit(parameter_id):
     start = end - timedelta(days=100)
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
-    normalized, _ = complement_csv_value(normalized_all)
+    target = check_target(normalized_all)
+    normalized = complement_csv_value(normalized_all, target)
     normalized = normalized.tail(int(limit))
-    df_num = normalized["num"]
+    df_num = normalized[target]
     df_num = df_num.to_dict()
     values = [value for _, value in df_num.items()]
     return {"data": values}

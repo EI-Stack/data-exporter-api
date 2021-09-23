@@ -24,16 +24,13 @@ def set_time_interval(x):
     return y
 
 
-def complement_csv_value(df):
+def complement_csv_value(df, target):
     df["time"] = df["time"].apply(delete_seconds)
     df = df.set_index("time")
-    columns = df.columns
-    if "num" in columns:
+    if "num" == target:
         new_df = df.num.resample(rule="15T").mean()
-        target = "num"
     else:
         new_df = df.value.resample(rule="15T").mean()
-        target = "value"
     new_df = new_df.reset_index()
     new_df.fillna(method="pad", axis=0, inplace=True)
     new_df.insert(
@@ -42,7 +39,7 @@ def complement_csv_value(df):
     new_df["time"] = new_df["time"].apply(
         lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.000Z")
     )
-    return new_df, target
+    return new_df
 
 
 def check_data_count(normalized_df):
@@ -53,3 +50,12 @@ def check_data_count(normalized_df):
     ):
         return False
     return True
+
+
+def check_target(df):
+    columns = df.columns
+    if "num" in columns:
+        target = "num"
+    else:
+        target = "value"
+    return target

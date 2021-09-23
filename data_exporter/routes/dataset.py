@@ -14,7 +14,7 @@ from data_exporter.utils.dataset_helper import (
     set_s3_dataset,
     concat_split_datetime_dataset,
 )
-from data_exporter.utils.csv_value_helper import complement_csv_value, check_data_count
+from data_exporter.utils.csv_value_helper import complement_csv_value, check_data_count, check_target
 from data_exporter.utils.web_client import DataSetWebClient
 
 # print(mqtt.broker_url)
@@ -68,7 +68,8 @@ def get_dataset_file(parameter_id):
     start = end - timedelta(days=100)
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
-    normalized_df, target = complement_csv_value(normalized_all)
+    target = check_target(normalized_all)
+    normalized_df = complement_csv_value(normalized_all, target)
     if not check_data_count(normalized_df):
         return (
             jsonify(
