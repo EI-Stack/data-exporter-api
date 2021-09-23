@@ -58,4 +58,5 @@ def check_target(df):
         target = "num"
     else:
         target = "value"
+    print(target)
     return target
