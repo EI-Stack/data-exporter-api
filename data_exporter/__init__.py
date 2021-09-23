@@ -3,7 +3,7 @@ from .config import config
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 
-mqtt = Mqtt()
+# mqtt = Mqtt()
 db = MongoEngine()
 # socketio = SocketIO()
 def create_app(config_name="development"):
@@ -14,7 +14,7 @@ def create_app(config_name="development"):
         # socketio.init_app(app)
 
         # models.init_app(app)
-        mqtt.init_app(app)
+        # mqtt.init_app(app)
         db.init_app(app)
         from . import routes
 

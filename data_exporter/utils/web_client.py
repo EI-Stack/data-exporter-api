@@ -2,6 +2,7 @@ import requests
 import json
 from minio import Minio
 from flask import current_app
+from concurrent.futures import ThreadPoolExecutor, wait
 
 URL = current_app.config["AFS_URL"]
 INSTANCE_ID = "2174f980-0fc1-5b88-913b-2db9c1deccc5"
@@ -11,8 +12,12 @@ query_with_date = """
     parameter(id: $id){
             id
             _id
+            scadaId
+            tagId
     valuesInRange(from: $from to: $to){
+      time
       num
+      savedAt
     }
   }
 }

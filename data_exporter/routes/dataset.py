@@ -1,48 +1,48 @@
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, request, current_app, jsonify
-from data_exporter import mqtt
+# from data_exporter import mqtt
 from data_exporter.utils.mqtt_topic import MqttTopicHandler
 from io import BytesIO
 import json
 import pandas as pd
-
-from data_exporter.utils.parameter_helper import transfer_to_big_parameter_id
+import threading
+from data_exporter.utils.dataset_helper import transfer_to_big_parameter_id, split_datetime
 from data_exporter.utils.csv_value_helper import complement_csv_value
 from data_exporter.utils.web_client import DataSetWebClient
 
-print(mqtt.broker_url)
+# print(mqtt.broker_url)
 dataset_bp = Blueprint("dataset_bp", __name__)
 
 
-@mqtt.on_connect()
-def handle_connect(client, userdata, flags, rc):
-    # mqtt.subscribe('iot-2/evt/waconn/fmt/grant-test')
-    mqtt.subscribe("iot-2/evt/wadata/fmt/grant-test")
-    mqtt.subscribe("iot-2/evt/wacfg/fmt/grant-test")
-    # print(mqtt.topics)
+# @mqtt.on_connect()
+# def handle_connect(client, userdata, flags, rc):
+#     # mqtt.subscribe('iot-2/evt/waconn/fmt/grant-test')
+#     mqtt.subscribe("iot-2/evt/wadata/fmt/grant-test")
+#     mqtt.subscribe("iot-2/evt/wacfg/fmt/grant-test")
+#     # print(mqtt.topics)
+#
+#
+# @mqtt.on_message()
+# def handle_mqtt_message(client, userdata, message):
+#     payload = message.payload.decode()
+#     res_dict = json.loads(payload)
+#     print("-------msg-------")
+#     print("dict  :", res_dict, "<<<>>>", "topic  :", message.topic)
+#     topic_type = message.topic.split("/")[2]
+#     if topic_type == "waconn":
+#         MqttTopicHandler(res_dict).waconn_info()
+#     elif topic_type == "wadata":
+#         MqttTopicHandler(res_dict).wadata_info()
+#     elif topic_type == "wacfg":
+#         MqttTopicHandler(res_dict).wacfg_info()
+#     # elif topic_type == 'ifpcfg':
+#     #     MqttTopicHandler(res_dict).ifpcfg_info()
 
 
-@mqtt.on_message()
-def handle_mqtt_message(client, userdata, message):
-    payload = message.payload.decode()
-    res_dict = json.loads(payload)
-    print("-------msg-------")
-    print("dict  :", res_dict, "<<<>>>", "topic  :", message.topic)
-    topic_type = message.topic.split("/")[2]
-    if topic_type == "waconn":
-        MqttTopicHandler(res_dict).waconn_info()
-    elif topic_type == "wadata":
-        MqttTopicHandler(res_dict).wadata_info()
-    elif topic_type == "wacfg":
-        MqttTopicHandler(res_dict).wacfg_info()
-    # elif topic_type == 'ifpcfg':
-    #     MqttTopicHandler(res_dict).ifpcfg_info()
-
-
-mqtt.client.on_connect = handle_connect
-mqtt.client.on_message = handle_mqtt_message
-print("mqtt_set")
+# mqtt.client.on_connect = handle_connect
+# mqtt.client.on_message = handle_mqtt_message
+# print("mqtt_set")
 # mqtt.client.loop_forever()
 # mqtt.client.loop()
 
@@ -57,22 +57,41 @@ def get_dataset_file(parameter_id):
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    variables = {"id": parameter_id, "n": pow(2, 31) - 1}  # pow(2, 31) - 1
-    r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
-    data = pd.read_json(r.text)["data"]["parameter"]
-    normalized = pd.json_normalize(data, "limitToNthValues", ["scadaId", "tagId"])
-    normalized = complement_csv_value(normalized)
-    if len(normalized.index) < 2880:
-        return jsonify(
-            {"message": "Data Exporter dataset is less than one month of information"},
+    # variables = {"id": parameter_id, "n": 50000}  # pow(2, 31) - 1
+    end = datetime.utcnow()
+    start = end - timedelta(days=100)
+    date_list = split_datetime(start, end)
+    normalized_all = pd.DataFrame()
+    for i, date in enumerate(date_list):
+        variables = {"id": parameter_id, "from": date[0], "to": date[1]}
+        r = DataSetWebClient.get_dataset_with_graphql_by_date(variables)
+        data = pd.read_json(r.text)["data"]["parameter"]
+        normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
+        print(normalized.index, date[0], date[1])
+        normalized_all = pd.concat([normalized_all, normalized], axis=0, ignore_index=True)
+    print(normalized_all)
+    # print(r.text)
+    normalized_df = complement_csv_value(normalized_all)
+    print(normalized_df)
+    if datetime.fromtimestamp(
+        normalized_df.tail(1)["savedAt"] / 1000
+    ) - datetime.fromtimestamp(normalized_df.head(1)["savedAt"] / 1000) < timedelta(
+        days=30
+    ):
+        return (
+            jsonify(
+                {
+                    "message": "Data Exporter dataset is less than one month of information"
+                },
+            ),
             406,
         )
-    columns = normalized.columns
+    columns = normalized_df.columns
     if "num" in columns:
         target = "num"
     else:
         target = "value"
-    csv_bytes = normalized.to_csv().encode("utf-8")
+    csv_bytes = normalized_df.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     client = DataSetWebClient.get_minio_client(S3_bucket_name)
     file_name = parameter_id + "." + str(uuid4())[-9:-1]
