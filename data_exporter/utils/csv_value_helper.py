@@ -1,6 +1,6 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
+
+SPLIT_TIME = 15
 
 
 def delete_seconds(time):
@@ -25,36 +25,31 @@ def set_time_interval(x):
 
 
 def complement_csv_value(df):
-    # grouper = df.groupby('time').describe()
     df["time"] = df["time"].apply(delete_seconds)
-    df["time"] = df["time"].apply(set_time_interval)
-    new_df = df.groupby("time").mean().reset_index()
-    # --ADD other column--
-    # new_df['time'] = new_df.index
-    # new_df['key'] = 1
-    # other_df = df[['scadaId', 'tagId']].loc[:0, ['scadaId', 'tagId']]
-    # other_df['key'] = 1
-    # res = new_df.reset_index().merge(other_df, on='key').drop('key', 1)
+    df = df.set_index("time")
+    columns = df.columns
+    if "num" in columns:
+        new_df = df.num.resample(rule="15T").mean()
+        target = "num"
+    else:
+        new_df = df.value.resample(rule="15T").mean()
+        target = "value"
+    new_df = new_df.reset_index()
+    new_df.fillna(method="pad", axis=0, inplace=True)
     new_df.insert(
         2, "savedAt", new_df["time"].apply(lambda d: int(datetime.timestamp(d) * 1000))
     )
     new_df["time"] = new_df["time"].apply(
         lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.000Z")
     )
-    return new_df
+    return new_df, target
 
-    # --Datetime change--
-    # normalized["savedAt"] = pd.to_datetime(
-    #     normalized["savedAt"], format="%Y-%m-%dT%H:%M:%S.%fZ"
-    # )
-    # normalized["savedAt"] = normalized["savedAt"].apply(
-    #     lambda d: int(datetime.timestamp(d) * 1000)
-    # )
-    # normalized["time"] = pd.to_datetime(
-    #     normalized["time"], format="%Y-%m-%dT%H:%M:%S.%fZ"
-    # )
-    # normalized["time"] = normalized["time"].apply(
-    #     lambda d: d.strftime("%Y/%m/%d %p %H:%M:%S")
-    #     .replace("AM", "上午")
-    #     .replace("PM", "下午")
-    # )
+
+def check_data_count(normalized_df):
+    if datetime.fromtimestamp(
+        normalized_df.tail(1)["savedAt"] / 1000
+    ) - datetime.fromtimestamp(normalized_df.head(1)["savedAt"] / 1000) < timedelta(
+        days=30
+    ):
+        return False
+    return True

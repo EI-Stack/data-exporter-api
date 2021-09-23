@@ -4,6 +4,7 @@ from minio import Minio
 from flask import current_app
 from concurrent.futures import ThreadPoolExecutor, wait
 
+# 拆 os env
 URL = current_app.config["AFS_URL"]
 INSTANCE_ID = "2174f980-0fc1-5b88-913b-2db9c1deccc5"
 HEADERS = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
@@ -39,6 +40,7 @@ query_with_limit = """
 """
 
 
+#  網址拆os env
 def get_sso_token():
     r = requests.get(
         "https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token"
@@ -48,6 +50,7 @@ def get_sso_token():
     return token
 
 
+#  類別拆開 singleturn
 class DataSetWebClient:
     def __init__(self):
         self.headers = {

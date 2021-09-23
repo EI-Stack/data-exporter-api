@@ -1,11 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 from flask import Blueprint, request
 import json
 
 from data_exporter.utils.csv_value_helper import complement_csv_value
-from data_exporter.utils.dataset_helper import transfer_to_big_parameter_id
+from data_exporter.utils.dataset_helper import (
+    transfer_to_big_parameter_id,
+    split_datetime,
+    concat_split_datetime_dataset,
+)
 from data_exporter.utils.web_client import DataSetWebClient
 
 spc_bp = Blueprint("spc_bp", __name__)
@@ -24,14 +28,13 @@ def get_data_with_date(parameter_id):
         raise ValueError(
             "Must fill start and end datetime. Example: 2021-07-03T04:01:53.835Z"
         )
-    variables = {"id": parameter_id, "from": start, "to": end}
-    r = DataSetWebClient.get_dataset_with_graphql_by_date(variables)
-    result = json.loads(r.text)
-    if not result.get("data").get("parameter"):
-        return {"data": []}
-    values = [
-        i.get("num") for i in result.get("data").get("parameter").get("valuesInRange")
-    ]
+    start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%fZ")
+    end = datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%fZ")
+    date_list = split_datetime(start, end)
+    normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
+    df_num = normalized_all["num"]
+    df_num = df_num.to_dict()
+    values = [value for _, value in df_num.items()]
     return {"data": values}
 
 
@@ -43,14 +46,11 @@ def get_data_with_limit(parameter_id):
     limit = request.args.get("limit", 10)
     if not limit:
         raise ValueError("Must fill limit count.")
-    variables = {"id": parameter_id, "n": pow(2, 31) - 1}
-    r = DataSetWebClient.get_dataset_with_graphql_by_limit(variables)
-    data = pd.read_json(r.text)["data"]["parameter"]
-    normalized = pd.json_normalize(
-        data,
-        "limitToNthValues",
-    )
-    normalized = complement_csv_value(normalized)
+    end = datetime.utcnow()
+    start = end - timedelta(days=100)
+    date_list = split_datetime(start, end)
+    normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
+    normalized, _ = complement_csv_value(normalized_all)
     normalized = normalized.tail(int(limit))
     df_num = normalized["num"]
     df_num = df_num.to_dict()
