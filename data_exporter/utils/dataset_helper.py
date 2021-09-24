@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 from data_exporter.utils.web_client import DataSetWebClient
-
+import multiprocessing
 
 def transfer_to_big_parameter_id(parameter_id):
     # desk parameter_id 轉 parameterID 方法
@@ -28,7 +28,7 @@ def split_list(l, n):
 
 def split_datetime(start, end):
     temp = []
-    N = 30
+    N = 25
     diff = (end - start) // (N - 1)
     for idx in range(0, N):
         # computing new dates
@@ -65,14 +65,27 @@ def set_s3_dataset(current_app, data_set_name, file_name, s3_bucket_name):
     return dataset_id
 
 
+def get_normalized_all(variables, return_list):
+    r = DataSetWebClient.get_dataset_with_graphql_by_date(variables)
+    data = pd.read_json(r.text)["data"]["parameter"]
+    normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
+    return_list.append(normalized)
+    # normalized_all = pd.concat(
+    #     [normalized_all, normalized], axis=0, ignore_index=True
+    # )
+
+
 def concat_split_datetime_dataset(date_list, parameter_id):
-    normalized_all = pd.DataFrame()
+    # normalized_all = pd.DataFrame()
+    jobs = []
+    return_list = multiprocessing.Manager().list()
     for i, date in enumerate(date_list):
         variables = {"id": parameter_id, "from": date[0], "to": date[1]}
-        r = DataSetWebClient.get_dataset_with_graphql_by_date(variables)
-        data = pd.read_json(r.text)["data"]["parameter"]
-        normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
-        normalized_all = pd.concat(
-            [normalized_all, normalized], axis=0, ignore_index=True
-        )
+        p = multiprocessing.Process(target=get_normalized_all, args=(variables, return_list))
+        print(p)
+        jobs.append(p)
+        p.start()
+    for proc in jobs:
+        proc.join()
+    normalized_all = pd.concat(return_list, ignore_index=True)
     return normalized_all

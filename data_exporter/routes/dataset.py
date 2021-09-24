@@ -6,8 +6,6 @@ from data_exporter import mqtt
 from data_exporter.utils.mqtt_topic import MqttTopicHandler
 from io import BytesIO
 import json
-import pandas as pd
-import threading
 from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
     split_datetime,
@@ -68,6 +66,8 @@ def get_dataset_file(parameter_id):
     start = end - timedelta(days=100)
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
+    if normalized_all.empty:
+        return {"data": {"bucket": s3_bucket_name}}
     target = check_target(normalized_all)
     normalized_df = complement_csv_value(normalized_all, target)
     if not check_data_count(normalized_df):

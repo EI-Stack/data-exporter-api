@@ -32,8 +32,9 @@ def get_data_with_date(parameter_id):
     end = datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%fZ")
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
+    if normalized_all.empty:
+        return {"data": []}
     target = check_target(normalized_all)
-    print(normalized_all, target, type(target))
     df_num = normalized_all[target]
     df_num = df_num.to_dict()
     values = [value for _, value in df_num.items()]
@@ -52,6 +53,8 @@ def get_data_with_limit(parameter_id):
     start = end - timedelta(days=100)
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
+    if normalized_all.empty:
+        return {"data": []}
     target = check_target(normalized_all)
     normalized = complement_csv_value(normalized_all, target)
     normalized = normalized.tail(int(limit))
