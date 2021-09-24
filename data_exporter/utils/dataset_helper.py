@@ -6,6 +6,7 @@ import pandas as pd
 from data_exporter.utils.web_client import DataSetWebClient
 import multiprocessing
 
+
 def transfer_to_big_parameter_id(parameter_id):
     # desk parameter_id 轉 parameterID 方法
     object_id = parameter_id
@@ -66,7 +67,7 @@ def set_s3_dataset(current_app, data_set_name, file_name, s3_bucket_name):
 
 
 def get_normalized_all(variables, return_list):
-    r = DataSetWebClient.get_dataset_with_graphql_by_date(variables)
+    r = DataSetWebClient().get_dataset_with_graphql_by_date(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
     return_list.append(normalized)
@@ -81,8 +82,9 @@ def concat_split_datetime_dataset(date_list, parameter_id):
     return_list = multiprocessing.Manager().list()
     for i, date in enumerate(date_list):
         variables = {"id": parameter_id, "from": date[0], "to": date[1]}
-        p = multiprocessing.Process(target=get_normalized_all, args=(variables, return_list))
-        print(p)
+        p = multiprocessing.Process(
+            target=get_normalized_all, args=(variables, return_list)
+        )
         jobs.append(p)
         p.start()
     for proc in jobs:

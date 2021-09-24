@@ -1,7 +1,6 @@
-from uuid import uuid4, UUID
+from uuid import uuid4
 from datetime import datetime
 from data_exporter.models import Waconn, Wadata, Wacfg
-import json
 
 
 def get_datetime_strptime(ts):

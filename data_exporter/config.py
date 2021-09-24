@@ -7,6 +7,9 @@ class Config:
     S3_ENDPOINT = os.getenv("S3_ENDPOINT")
     S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
     S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
+    INSTANCE_ID = os.getenv("INSTANCE_ID")
+    X_IFP_APP_SECRET = os.getenv("X_IFP_APP_SECRET")
+    SSO_TOKEN = os.getenv("SSO_TOKEN")
 
     @staticmethod
     def init_app(app):

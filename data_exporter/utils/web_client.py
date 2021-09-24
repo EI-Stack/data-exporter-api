@@ -4,10 +4,6 @@ from minio import Minio
 from flask import current_app
 from concurrent.futures import ThreadPoolExecutor, wait
 
-# 拆 os env
-URL = current_app.config["AFS_URL"]
-INSTANCE_ID = "2174f980-0fc1-5b88-913b-2db9c1deccc5"
-HEADERS = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
 query_with_date = """
     query parameter($id: ID! $from: DateTime!, $to: DateTime!) {
     parameter(id: $id){
@@ -40,11 +36,8 @@ query_with_limit = """
 """
 
 
-#  網址拆os env
 def get_sso_token():
-    r = requests.get(
-        "https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token"
-    )
+    r = requests.get(current_app.config["SSO_TOKEN"])
     result = json.loads(r.text)
     token = result.get("Authorization")
     return token
@@ -52,12 +45,23 @@ def get_sso_token():
 
 #  類別拆開 singleturn
 class DataSetWebClient:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        self.headers = {
+        self.token_headers = {
             "Authorization": get_sso_token(),
             "accept": "application/json",
             "content-type": "application/json",
         }
+        self.afs_url = current_app.config["AFS_URL"]
+        self.eks_url = current_app.config["EKS_URL"]
+        self.instance_id = current_app.config["INSTANCE_ID"]
+        self.ifp_headers = {"X-Ifp-App-Secret": current_app.config["X_IFP_APP_SECRET"]}
 
     @staticmethod
     def get_minio_client(bucket_name):
@@ -76,25 +80,23 @@ class DataSetWebClient:
             print(f"Bucket '{bucket_name}' already exists")
         return client
 
-    @staticmethod
-    def get_dataset_with_graphql_by_limit(variables):
+    def get_dataset_with_graphql_by_limit(self, variables):
         try:
             r = requests.post(
-                current_app.config["EKS_URL"],
+                self.eks_url,
                 json={"query": query_with_limit, "variables": variables},
-                headers=HEADERS,
+                headers=self.ifp_headers,
             )
         except Exception as e:
             raise e
         return r
 
-    @staticmethod
-    def get_dataset_with_graphql_by_date(variables):
+    def get_dataset_with_graphql_by_date(self, variables):
         try:
             r = requests.post(
-                current_app.config["EKS_URL"],
+                self.eks_url,
                 json={"query": query_with_date, "variables": variables},
-                headers=HEADERS,
+                headers=self.ifp_headers,
             )
         except Exception as e:
             raise e
@@ -103,7 +105,8 @@ class DataSetWebClient:
     def get_dataset_information(self):
         try:
             r = requests.get(
-                f"{URL}/v2/instances/{INSTANCE_ID}/datasets", headers=self.headers
+                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets",
+                headers=self.token_headers,
             )
         except Exception as e:
             raise e
@@ -112,8 +115,8 @@ class DataSetWebClient:
     def get_dataset_config(self, dataset_uuid):
         try:
             r = requests.get(
-                f"{URL}/v2/instances/{INSTANCE_ID}/datasets/{dataset_uuid}",
-                headers=self.headers,
+                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets/{dataset_uuid}",
+                headers=self.token_headers,
             )
         except Exception as e:
             raise e
@@ -122,9 +125,9 @@ class DataSetWebClient:
     def put_dataset_config(self, dataset_uuid, payload):
         try:
             r = requests.put(
-                f"{URL}/v2/instances/{INSTANCE_ID}/datasets/{dataset_uuid}",
+                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets/{dataset_uuid}",
                 json=payload,
-                headers=self.headers,
+                headers=self.token_headers,
             )
         except Exception as e:
             raise e
@@ -133,9 +136,9 @@ class DataSetWebClient:
     def post_dataset_bucket(self, payload):
         try:
             r = requests.post(
-                f"{URL}/v2/instances/{INSTANCE_ID}/datasets",
+                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets",
                 json=payload,
-                headers=self.headers,
+                headers=self.token_headers,
             )
         except Exception as e:
             raise e
