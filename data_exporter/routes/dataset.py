@@ -61,6 +61,7 @@ s3_bucket_name = "data-exporter-file"
 def get_dataset_file(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
+    dataset_web_client = DataSetWebClient()
     parameter_id = transfer_to_big_parameter_id(parameter_id)
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
@@ -83,7 +84,7 @@ def get_dataset_file(parameter_id):
         )
     csv_bytes = normalized_df.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
-    client = DataSetWebClient.get_minio_client(s3_bucket_name)
+    client = dataset_web_client.get_minio_client(s3_bucket_name)
     file_name = parameter_id + "." + str(uuid4())[-9:-1]
     client.put_object(
         s3_bucket_name,
@@ -92,29 +93,27 @@ def get_dataset_file(parameter_id):
         length=len(csv_bytes),
         content_type="application/csv",
     )
-    res = DataSetWebClient().get_dataset_information()
+    res = dataset_web_client.get_dataset_information()
     data = json.loads(res.text)
     exist = False
     dataset_id = ""
     for item in data.get("resources"):
         if item.get("name") == data_set_name:
             dataset_id = item.get("uuid")
-            f = DataSetWebClient().get_dataset_config(item.get("uuid"))
+            f = dataset_web_client.get_dataset_config(item.get("uuid"))
             payload = json.loads(f.text)
             for data in payload.get("firehose").get("data").get("buckets"):
                 if data.get("bucket") == s3_bucket_name:
                     files = data.get("blobs").get("files")
                     files.append(f"{file_name}.csv")
             # put file
-            DataSetWebClient().put_dataset_config(
+            dataset_web_client.put_dataset_config(
                 dataset_uuid=item.get("uuid"), payload=payload
             )
             exist = True
             break
     if not exist:
-        dataset_id = set_s3_dataset(
-            current_app, data_set_name, file_name, s3_bucket_name
-        )
+        dataset_id = set_s3_dataset(data_set_name, file_name, s3_bucket_name)
     data_dict = {
         "data": {
             "bucket": s3_bucket_name,

@@ -1,7 +1,9 @@
 import base64
 import json
+import threading
 
 import pandas as pd
+from flask import current_app
 
 from data_exporter.utils.web_client import DataSetWebClient
 import multiprocessing
@@ -38,7 +40,7 @@ def split_datetime(start, end):
     return result
 
 
-def set_s3_dataset(current_app, data_set_name, file_name, s3_bucket_name):
+def set_s3_dataset(data_set_name, file_name, s3_bucket_name):
     payload = {
         "name": data_set_name,
         "firehose": {
@@ -66,11 +68,12 @@ def set_s3_dataset(current_app, data_set_name, file_name, s3_bucket_name):
     return dataset_id
 
 
-def get_normalized_all(variables, return_list):
-    r = DataSetWebClient().get_dataset_with_graphql_by_date(variables)
-    data = pd.read_json(r.text)["data"]["parameter"]
-    normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
-    return_list.append(normalized)
+def get_normalized_all(variables, return_list, app):
+    with app.app_context():
+        r = DataSetWebClient().get_dataset_with_graphql_by_date(variables)
+        data = pd.read_json(r.text)["data"]["parameter"]
+        normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
+        return_list.append(normalized)
     # normalized_all = pd.concat(
     #     [normalized_all, normalized], axis=0, ignore_index=True
     # )
@@ -79,15 +82,17 @@ def get_normalized_all(variables, return_list):
 def concat_split_datetime_dataset(date_list, parameter_id):
     # normalized_all = pd.DataFrame()
     jobs = []
-    return_list = multiprocessing.Manager().list()
+    return_list = []
+    app = current_app._get_current_object()
     for i, date in enumerate(date_list):
         variables = {"id": parameter_id, "from": date[0], "to": date[1]}
-        p = multiprocessing.Process(
-            target=get_normalized_all, args=(variables, return_list)
+        p = threading.Thread(
+            target=get_normalized_all, args=(variables, return_list, app)
         )
+        print(p)
         jobs.append(p)
-        p.start()
-    for proc in jobs:
-        proc.join()
+        jobs[i].start()
+    for t in jobs:
+        t.join()
     normalized_all = pd.concat(return_list, ignore_index=True)
     return normalized_all
