@@ -50,7 +50,7 @@ class Config:
             existence = os.path.exists(secret_fpath)
             if existence:
                 ret = open(secret_fpath).read().rstrip("\n")
-                logging.info("[MONGODB_PASSWORD] -------->   ", ret)
+                logging.info("[MONGODB_PASSWORD] -------->   " + ret)
                 MONGODB_PASSWORD = ret
         except Exception as e:
             raise EnvironmentError(e)

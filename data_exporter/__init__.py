@@ -25,9 +25,12 @@ def create_app(config_name="development"):
         mqtt.init_app(app)
         db.init_app(app)
         from . import routes
-        LOGGING_FORMAT = '%(asctime)s %(levelname)s: %(message)s'
-        DATE_FORMAT = '[%Y-%m-%d %H:%M:%S]'
-        logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT)
+
+        LOGGING_FORMAT = "%(asctime)s %(levelname)s: %(message)s"
+        DATE_FORMAT = "[%Y-%m-%d %H:%M:%S]"
+        logging.basicConfig(
+            level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT
+        )
         routes.init_app(app)
         scheduler.init_app(app)
         scheduler.start()

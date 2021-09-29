@@ -18,11 +18,11 @@ class MongoDB(object):
         )
         self.DATABASE = mongoClient[current_app.config["ENSAAS_MONGODB_DATABASE"]]
         logging.info(
-            "[CONNECT_MONGODB_URL]: ", current_app.config["ENSAAS_MONGODB_URL"]
+            "[CONNECT_MONGODB_URL]: " + current_app.config["ENSAAS_MONGODB_URL"]
         )
         logging.info(
-            "[CONNECT_MONGODB_DATABASE]: ",
-            current_app.config["ENSAAS_MONGODB_DATABASE"],
+            "[CONNECT_MONGODB_DATABASE]: "
+            + current_app.config["ENSAAS_MONGODB_DATABASE"],
         )
 
     def getOne(self, database, dictRequest):

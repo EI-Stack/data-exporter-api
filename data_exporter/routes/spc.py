@@ -1,5 +1,8 @@
+import json
 from datetime import datetime, timedelta
 from flask import Blueprint, request
+
+from data_exporter.models import SpcData
 from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
@@ -40,20 +43,11 @@ def get_data_with_date(parameter_id):
 def get_data_with_limit(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
-    parameter_id = transfer_to_big_parameter_id(parameter_id)
+    # parameter_id = transfer_to_big_parameter_id(parameter_id)
     limit = request.args.get("limit", 10)
     if not limit:
         raise ValueError("Must fill limit count.")
-    end = datetime.utcnow()
-    start = end - timedelta(days=100)
-    date_list = split_datetime(start, end)
-    normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
-    if normalized_all.empty:
-        return {"data": []}
-    target = check_target(normalized_all)
-    normalized = complement_csv_value(normalized_all, target)
-    normalized = normalized.tail(int(limit))
-    df_num = normalized[target]
-    df_num = df_num.to_dict()
-    values = [value for _, value in df_num.items()]
+    data = SpcData.objects(ParameterID=parameter_id).order_by("-created_at").first()
+    value_list = json.loads(data.value_list)
+    values = value_list[-int(limit) :]
     return {"data": values}

@@ -75,11 +75,6 @@ def get_normalized_all(variables):
     r = DataSetWebClient().get_dataset_with_graphql_by_date(variables)
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
-    # return_list.append(normalized)
-    # return_list.append(normalized)
-    # normalized_all = pd.concat(
-    #     [normalized_all, normalized], axis=0, ignore_index=True
-    # )
     return normalized
 
 
@@ -97,7 +92,6 @@ def spc_routine():
     with scheduler.app.app_context():
         ensaas = MongoDB()
         parameter_id_list = ensaas.DATABASE["iii.pml.task"].distinct("ParameterID")
-        logging.info('parameter_id_list: ', parameter_id_list)
         spc_data_list = []
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(days=100)
@@ -105,7 +99,7 @@ def spc_routine():
         from data_exporter.models import SpcData
 
         for parameter_id in parameter_id_list:
-            logging.info('parameter_id: ', parameter_id)
+            logging.info("parameter_id: " + parameter_id)
             normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
             if normalized_all.empty:
                 return {"data": []}
@@ -124,5 +118,4 @@ def spc_routine():
                     }
                 )
             )
-
         SpcData.objects.insert(spc_data_list)
