@@ -1,11 +1,18 @@
+
+from apscheduler.schedulers.blocking import BlockingScheduler
 from flask import Flask
+from flask_apscheduler import APScheduler
+
 from .config import config
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 
 mqtt = Mqtt()
 db = MongoEngine()
+scheduler = APScheduler()
 # socketio = SocketIO()
+
+
 def create_app(config_name="development"):
     app = Flask(__name__)
     with app.app_context():
@@ -19,4 +26,7 @@ def create_app(config_name="development"):
         from . import routes
 
         routes.init_app(app)
+        scheduler.init_app(app)
+        scheduler.start()
+
     return app

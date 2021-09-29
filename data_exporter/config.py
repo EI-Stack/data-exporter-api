@@ -10,6 +10,18 @@ class Config:
     INSTANCE_ID = os.getenv("INSTANCE_ID")
     X_IFP_APP_SECRET = os.getenv("X_IFP_APP_SECRET")
     SSO_TOKEN = os.getenv("SSO_TOKEN")
+    SCHEDULER_API_ENABLED = True
+    JOBS = [
+        {
+            'id': 'spc_data',                # 一个标识
+            'func': 'data_exporter.utils.dataset_helper:spc_routine',     # 指定运行的函数
+            'args': None,              # 传入函数的参数
+            'trigger': 'cron',       # 指定 定时任务的类型
+            'day': '*',
+            'hour': '*',
+            'minute': '0, 15, 30, 45'      # 运行的间隔时间
+        }
+    ]
 
     @staticmethod
     def init_app(app):
