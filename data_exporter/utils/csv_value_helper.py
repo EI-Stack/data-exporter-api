@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 SPLIT_TIME = 15
@@ -58,5 +59,5 @@ def check_target(df):
         target = "num"
     else:
         target = "value"
-    print("target:  ", target)
+    logging.info("target:  ", target)
     return target

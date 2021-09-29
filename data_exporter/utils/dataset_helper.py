@@ -1,12 +1,13 @@
 import base64
 import json
-import threading
+import logging
 from datetime import datetime, timedelta
 from uuid import uuid4
 import pandas as pd
 from flask import current_app
 
 from data_exporter import scheduler
+from data_exporter.models.ensaas import MongoDB
 from data_exporter.utils.csv_value_helper import check_target, complement_csv_value
 from data_exporter.utils.web_client import DataSetWebClient
 
@@ -84,11 +85,8 @@ def get_normalized_all(variables):
 
 def concat_split_datetime_dataset(date_list, parameter_id):
     normalized_all = pd.DataFrame()
-    jobs = []
-    return_list = []
     for i, date in enumerate(date_list):
         variables = {"id": parameter_id, "from": date[0], "to": date[1]}
-        print(i)
         normalized = get_normalized_all(variables)
         # print(normalized)
         normalized_all = pd.concat([normalized_all, normalized], ignore_index=True)
@@ -97,17 +95,18 @@ def concat_split_datetime_dataset(date_list, parameter_id):
 
 def spc_routine():
     with scheduler.app.app_context():
+        ensaas = MongoDB()
+        parameter_id_list = ensaas.DATABASE["iii.pml.task"].distinct("ParameterID")
+        logging.info('parameter_id_list: ', parameter_id_list)
         spc_data_list = []
-        # parameter_id_list = ['60b9be30756cf400062e3fbf']
-        parameter_id_list = ['60b9be30756cf400062e3fbf', '60b9be30756cf400062e3fac']
-        parameter_id_list = [transfer_to_big_parameter_id(i)for i in parameter_id_list]
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(days=100)
         date_list = split_datetime(start_time, end_time)
         from data_exporter.models import SpcData
+
         for parameter_id in parameter_id_list:
+            logging.info('parameter_id: ', parameter_id)
             normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
-            print(normalized_all)
             if normalized_all.empty:
                 return {"data": []}
             target = check_target(normalized_all)
@@ -117,7 +116,13 @@ def spc_routine():
             values = [value for _, value in df_num.items()]
             values_list = json.dumps(values)
             spc_data_list.append(
-                SpcData(**{"uuid": str(uuid4()), "parameter_id": parameter_id, "value_list": values_list})
+                SpcData(
+                    **{
+                        "uuid": str(uuid4()),
+                        "ParameterID": parameter_id,
+                        "value_list": values_list,
+                    }
+                )
             )
 
         SpcData.objects.insert(spc_data_list)

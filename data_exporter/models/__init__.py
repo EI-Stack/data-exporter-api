@@ -36,6 +36,6 @@ class Wacfg(db.Document):
 
 class SpcData(db.Document):
     uuid = db.UUIDField(required=True, unique=True)
-    parameter_id = db.StringField()
+    ParameterID = db.StringField()
     value_list = db.StringField()
     created_at = db.DateTimeField(default=isodatetime)
