@@ -59,5 +59,5 @@ def check_target(df):
         target = "num"
     else:
         target = "value"
-    logging.info("target:  " + target)
+    logging.info("[TARGET_TYPE]:  " + target)
     return target

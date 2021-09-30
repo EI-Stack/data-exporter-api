@@ -91,18 +91,22 @@ def concat_split_datetime_dataset(date_list, parameter_id):
 def spc_routine():
     with scheduler.app.app_context():
         ensaas = MongoDB()
-        parameter_id_list = ensaas.DATABASE["iii.pml.task"].distinct("ParameterID")
+        ensaas_db = ensaas.DATABASE["iii.pml.task"]
+        if not ensaas_db:
+            raise logging.info(ensaas_db)
+        parameter_id_list = ensaas_db.distinct("ParameterID")
+        if not parameter_id_list:
+            return
         spc_data_list = []
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(days=100)
         date_list = split_datetime(start_time, end_time)
         from data_exporter.models import SpcData
-
         for parameter_id in parameter_id_list:
-            logging.info("parameter_id: " + parameter_id)
+            logging.info("[PARAMETER_ID]: " + parameter_id)
             normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
             if normalized_all.empty:
-                return {"data": []}
+                continue
             target = check_target(normalized_all)
             normalized = complement_csv_value(normalized_all, target)
             df_num = normalized[target]
@@ -118,4 +122,6 @@ def spc_routine():
                     }
                 )
             )
+            logging.info("[END QUERY]: " + parameter_id)
+        logging.info("[INSERT PARAMETER INFO]: " + parameter_id)
         SpcData.objects.insert(spc_data_list)

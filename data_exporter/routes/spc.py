@@ -19,7 +19,7 @@ headers = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4
 def get_data_with_date(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
-    parameter_id = transfer_to_big_parameter_id(parameter_id)
+    # parameter_id = transfer_to_big_parameter_id(parameter_id)
     start = request.args.get("start_time", "")
     end = request.args.get("end_time", "")
     if (not start) or (not end):
@@ -48,6 +48,8 @@ def get_data_with_limit(parameter_id):
     if not limit:
         raise ValueError("Must fill limit count.")
     data = SpcData.objects(ParameterID=parameter_id).order_by("-created_at").first()
+    if not data:
+        return {"data": []}
     value_list = json.loads(data.value_list)
     values = value_list[-int(limit) :]
     return {"data": values}

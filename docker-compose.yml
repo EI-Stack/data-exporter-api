@@ -2,26 +2,18 @@ version: "3.7"
 services:
   data-exporter-api:
     container_name: "data-exporter-api"
-    image: nexus-docker-registry.iii-ei-stack.com/data_exporter:0.0.20
+    image: nexus-docker-registry.iii-ei-stack.com/data_exporter:0.2.12
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
-      - FLASK_APP=data_exporter.run.py
-      - EKS_URL=https://ifp-organizer-dmd-eks009.sa.wise-paas.com/graphql
-      - AFS_URL=http://api-afs-stage2-eks006.sa.wise-paas.com
-      - S3_ENDPOINT=ai-storage.amp.iii-ei-stack.com
-      - S3_ACCESS_KEY=Bknu1IKIfK5it1XnseDh4GsuzwhAG1JF
-      - S3_SECRET_KEY=mSM8eEYrT57votdHj7BPmZdxvN5hSb3I
-      - MQTT_BROKER_URL=ifactory-mqtt.iii-ei-stack.com
-      - MQTT_USERNAME=iii-eistack
-      - MQTT_PASSWORD=g0kBqOviZ8
-      - MQTT_BROKER_PORT=31883
-      - MQTT_REFRESH_TIME=1.0
-      - MQTT_KEEPALIVE=5
-      - MQTT_TLS_ENABLED=False
-      - MONGODB_TABLE_NAME=data_set
-      - MONGODB_HOST=127.0.0.1
-      - MONGODB_PORT=27017
-      - INSTANCE_ID=2174f980-0fc1-5b88-913b-2db9c1deccc5
-      - X_IFP_APP_SECRET=OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4
-      - SSO_TOKEN=https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token
+      - MONGODB_HOST=host.docker.internal
+  mongo:
+    image: mongo:4.4.5
+    container_name: "mongodb_container"
+    ports:
+      - "27017:27017"
+#    volumes:
+#       - :/data/db
+
