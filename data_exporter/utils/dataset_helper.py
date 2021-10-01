@@ -34,9 +34,16 @@ def split_list(l, n):
 
 def split_datetime(start, end):
     temp = []
-    N = 25
-    diff = (end - start) // (N - 1)
-    for idx in range(0, N):
+    if end - start < timedelta(days=30):
+        return [
+            [
+                start.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                end.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            ]
+        ]
+    n = 5
+    diff = (end - start) // (n - 1)
+    for idx in range(0, n):
         # computing new dates
         temp.append((start + idx * diff).strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
     result = list(split_list(temp, 2))
@@ -102,6 +109,7 @@ def spc_routine():
         start_time = end_time - timedelta(days=100)
         date_list = split_datetime(start_time, end_time)
         from data_exporter.models import SpcData
+
         for parameter_id in parameter_id_list:
             logging.info("[PARAMETER_ID]: " + parameter_id)
             normalized_all = concat_split_datetime_dataset(date_list, parameter_id)

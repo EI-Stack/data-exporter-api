@@ -9,21 +9,14 @@ class MongoDB(object):
     def __init__(self):
         mongoClient = MongoProxy(
             MongoClient(
-                current_app.config["ENSAAS_MONGODB_URL"],
-                username=current_app.config["ENSAAS_MONGODB_USERNAME"],
-                password=current_app.config["ENSAAS_MONGODB_PASSWORD"],
-                authSource=current_app.config["ENSAAS_MONGODB_AUTH_SOURCE"],
-                authMechanism="SCRAM-SHA-1",
+                current_app.config["EKS_009_HOST"],
+                username=current_app.config["EKS_009_USERNAME"],
+                password=current_app.config["EKS_009_PASSWORD"],
+                authSource=current_app.config["EKS_009_DATABASE"],
+                # authMechanism="SCRAM-SHA-1",
             )
         )
-        self.DATABASE = mongoClient[current_app.config["ENSAAS_MONGODB_DATABASE"]]
-        logging.info(
-            "[CONNECT_MONGODB_URL]: " + current_app.config["ENSAAS_MONGODB_URL"]
-        )
-        logging.info(
-            "[CONNECT_MONGODB_DATABASE]: "
-            + current_app.config["ENSAAS_MONGODB_DATABASE"],
-        )
+        self.DATABASE = mongoClient[current_app.config["EKS_009_DATABASE"]]
 
     def getOne(self, database, dictRequest):
         mCollection = self.DATABASE[database]

@@ -10,7 +10,7 @@ from flask_mongoengine import MongoEngine
 
 mqtt = Mqtt()
 db = MongoEngine()
-# scheduler = APScheduler(BackgroundScheduler(job_defaults={"max_instances": 1}))
+scheduler = APScheduler(BackgroundScheduler(job_defaults={"max_instances": 1}))
 # socketio = SocketIO()
 
 
@@ -32,7 +32,7 @@ def create_app(config_name="development"):
             level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT
         )
         routes.init_app(app)
-        # scheduler.init_app(app)
+        scheduler.init_app(app)
         # scheduler.start()
 
     return app

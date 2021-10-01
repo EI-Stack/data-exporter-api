@@ -1,8 +1,11 @@
 import json
 from datetime import datetime, timedelta
+
+import pandas as pd
 from flask import Blueprint, request
 
 from data_exporter.models import SpcData
+from data_exporter.models.ensaas import MongoDB
 from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
@@ -47,9 +50,23 @@ def get_data_with_limit(parameter_id):
     limit = request.args.get("limit", 10)
     if not limit:
         raise ValueError("Must fill limit count.")
-    data = SpcData.objects(ParameterID=parameter_id).order_by("-created_at").first()
-    if not data:
-        return {"data": []}
-    value_list = json.loads(data.value_list)
-    values = value_list[-int(limit) :]
+    mongo = MongoDB()
+    df_all = pd.DataFrame()
+    collection_list = ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]
+    for collection in collection_list:
+        mongo_db = mongo.DATABASE[collection]
+        cursor = mongo_db.find({"parameterNodeId": parameter_id})
+        df = pd.DataFrame(list(cursor))
+        df_all = pd.concat([df_all, df], ignore_index=True)
+    target = check_target(df_all)
+    df_num = df_all[target]
+    df_num = df_num.to_dict()
+    values_list = [value for _, value in df_num.items()]
+    values = values_list[-int(limit) :]
+    # print(df_all[['logTime', 'parameterNodeId', 'value']])
+    # data = SpcData.objects(ParameterID=parameter_id).order_by("-created_at").first()
+    # if not data:
+    #     return {"data": []}
+    # value_list = json.loads(data.value_list)
+    # values = value_list[-int(limit) :]
     return {"data": values}

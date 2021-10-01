@@ -54,6 +54,10 @@ class Config:
                 MONGODB_PASSWORD = ret
         except Exception as e:
             raise EnvironmentError(e)
+    EKS_009_HOST = os.getenv("EKS_009_HOST")
+    EKS_009_USERNAME = os.getenv("EKS_009_USERNAME")
+    EKS_009_PASSWORD = os.getenv("EKS_009_PASSWORD")
+    EKS_009_DATABASE = os.getenv("EKS_009_DATABASE")
 
     @staticmethod
     def init_app(app):
