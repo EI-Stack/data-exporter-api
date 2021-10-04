@@ -62,11 +62,10 @@ def get_dataset_file(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
     dataset_web_client = DataSetWebClient()
-    parameter_id = transfer_to_big_parameter_id(parameter_id)
+    # parameter_id = transfer_to_big_parameter_id(parameter_id)
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    # variables = {"id": parameter_id, "n": 50000}  # pow(2, 31) - 1
     end = datetime.utcnow()
     start = end - timedelta(days=100)
     date_list = split_datetime(start, end)
@@ -82,10 +81,11 @@ def get_dataset_file(parameter_id):
             ),
             406,
         )
+    file_name = parameter_id + "." + str(uuid4())[-9:-1]
+    normalized_df.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
     csv_bytes = normalized_df.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     client = dataset_web_client.get_minio_client(s3_bucket_name)
-    file_name = parameter_id + "." + str(uuid4())[-9:-1]
     client.put_object(
         s3_bucket_name,
         f"{file_name}.csv",

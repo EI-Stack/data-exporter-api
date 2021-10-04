@@ -33,6 +33,6 @@ def create_app(config_name="development"):
         )
         routes.init_app(app)
         scheduler.init_app(app)
-        # scheduler.start()
+        scheduler.start()
 
     return app

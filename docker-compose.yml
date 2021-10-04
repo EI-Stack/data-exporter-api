@@ -2,7 +2,7 @@ version: "3.7"
 services:
   data-exporter-api:
     container_name: "data-exporter-api"
-    image: nexus-docker-registry.iii-ei-stack.com/data_exporter:0.2.12
+    image: nexus-docker-registry.iii-ei-stack.com/data_exporter:0.2.14
     ports:
       - "5000:5000"
     env_file:

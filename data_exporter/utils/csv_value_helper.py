@@ -1,5 +1,11 @@
 import logging
+import os
 from datetime import datetime, timedelta
+
+from flask import current_app
+
+from data_exporter import scheduler
+from data_exporter.utils.web_client import DataSetWebClient
 
 SPLIT_TIME = 15
 
@@ -61,3 +67,32 @@ def check_target(df):
         target = "value"
     logging.info("[TARGET_TYPE]:  " + target)
     return target
+
+
+def clean_csv():
+    with scheduler.app.app_context():
+        # MinIO csv files
+        dataset_web_client = DataSetWebClient()
+        client = dataset_web_client.get_minio_client(
+            current_app.config["S3_BUCKET_NAME"]
+        )
+        objects_to_delete = client.list_objects(
+            current_app.config["S3_BUCKET_NAME"], recursive=True
+        )
+        now = datetime.utcnow()
+        objects_to_delete = [
+            obj.object_name
+            for obj in objects_to_delete
+            if now - obj.last_modified.replace(tzinfo=None) > timedelta(hours=12)
+        ]
+        client.remove_objects(current_app.config["S3_BUCKET_NAME"], objects_to_delete)
+        logging.info("[DELETE_MINIO_CSV_FILE]:  " + str(objects_to_delete))
+        # local csv files
+        location = "./csv_file"
+        for f in os.listdir(location):
+            file_name = f"{location}/{f}"
+            creation_time = os.path.getctime(file_name)
+            creation_time = datetime.utcfromtimestamp(creation_time)
+            if now - creation_time > timedelta(hours=12):
+                os.remove(file_name)
+                logging.info("[DELETE_CSV_FILE]:  " + file_name)
