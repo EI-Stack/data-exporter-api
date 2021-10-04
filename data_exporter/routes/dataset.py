@@ -54,7 +54,7 @@ mqtt.client.on_message = handle_mqtt_message
 # mqtt.client.loop_forever()
 # mqtt.client.loop()
 
-s3_bucket_name = "data-exporter-file"
+s3_bucket_name = current_app.config["S3_BUCKET_NAME"]
 
 
 @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])

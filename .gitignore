@@ -141,3 +141,4 @@ cython_debug/
 venv/
 
 /deploy/plugins
+/csv_file
