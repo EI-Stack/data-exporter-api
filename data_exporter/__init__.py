@@ -22,7 +22,7 @@ def create_app(config_name="development"):
         # socketio.init_app(app)
 
         # models.init_app(app)
-        mqtt.init_app(app)
+        # mqtt.init_app(app)
         db.init_app(app)
         from . import routes
 

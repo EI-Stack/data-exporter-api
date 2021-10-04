@@ -41,7 +41,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
             - configMapRef:
-                name: data-exporter-cm
+                name: ifps-data-exporter-cm
                 optional: false
       {{- with .Values.nodeSelector }}
       nodeSelector:

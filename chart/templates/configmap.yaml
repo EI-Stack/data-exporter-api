@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: data-exporter-cm
+  name: ifps-data-exporter-cm
 data:
   AFS_URL: {{ quote .Values.dataExporter.configmap.AFS_URL }}
   EKS_URL: {{ quote .Values.dataExporter.configmap.EKS_URL }}
@@ -22,3 +22,10 @@ data:
   S3_SECRET_KEY: {{ quote .Values.dataExporter.configmap.S3_SECRET_KEY }}
   SSO_TOKEN: {{ quote .Values.dataExporter.configmap.SSO_TOKEN }}
   X_IFP_APP_SECRET: {{ quote .Values.dataExporter.configmap.X_IFP_APP_SECRET }}
+  EKS_009_DATABASE: {{ quote .Values.dataExporter.configmap.EKS_009_DATABASE }}
+  EKS_009_HOST: {{ quote .Values.dataExporter.configmap.EKS_009_HOST }}
+  EKS_009_PASSWORD: {{ quote .Values.dataExporter.configmap.EKS_009_PASSWORD }}
+  EKS_009_USERNAME: {{ quote .Values.dataExporter.configmap.EKS_009_USERNAME }}
+  ENSAAS_SERVICES: {{ quote .Values.dataExporter.configmap.ENSAAS_SERVICES }}
+  S3_BUCKET_NAME: {{ quote .Values.dataExporter.configmap.S3_BUCKET_NAME }}
+  TZ: {{ quote .Values.dataExporter.configmap.TZ }}
