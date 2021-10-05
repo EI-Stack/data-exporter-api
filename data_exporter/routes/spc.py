@@ -58,6 +58,8 @@ def get_data_with_limit(parameter_id):
         cursor = mongo_db.find({"parameterNodeId": parameter_id})
         df = pd.DataFrame(list(cursor))
         df_all = pd.concat([df_all, df], ignore_index=True)
+    if df_all.empty:
+        return {"data": []}
     target = check_target(df_all)
     df_num = df_all[target]
     df_num = df_num.to_dict()
