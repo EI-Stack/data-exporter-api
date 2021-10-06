@@ -60,15 +60,15 @@ def get_data_with_limit(parameter_id):
         df_all = pd.concat([df_all, df], ignore_index=True)
     if df_all.empty:
         return {"data": []}
+    df_all = df_all.set_index("logTime")
     target = check_target(df_all)
-    df_num = df_all[target]
+    if "num" == target:
+        new_df = df_all.num.resample(rule="15T").mean().ffill()
+    else:
+        new_df = df_all.value.resample(rule="15T").mean().ffill()
+    new_df = new_df.reset_index()
+    df_num = new_df[target]
     df_num = df_num.to_dict()
     values_list = [value for _, value in df_num.items()]
     values = values_list[-int(limit) :]
-    # print(df_all[['logTime', 'parameterNodeId', 'value']])
-    # data = SpcData.objects(ParameterID=parameter_id).order_by("-created_at").first()
-    # if not data:
-    #     return {"data": []}
-    # value_list = json.loads(data.value_list)
-    # values = value_list[-int(limit) :]
     return {"data": values}
