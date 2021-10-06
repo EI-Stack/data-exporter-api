@@ -80,13 +80,10 @@ def clean_csv():
             current_app.config["S3_BUCKET_NAME"], recursive=True
         )
         now = datetime.utcnow()
-        objects_to_delete = [
-            obj.object_name
-            for obj in objects_to_delete
-            if now - obj.last_modified.replace(tzinfo=None) > timedelta(hours=12)
-        ]
-        client.remove_objects(current_app.config["S3_BUCKET_NAME"], objects_to_delete)
-        logging.info("[DELETE_MINIO_CSV_FILE]:  " + str(objects_to_delete))
+        if objects_to_delete:
+            for obj in objects_to_delete:
+                if now - obj.last_modified.replace(tzinfo=None) > timedelta(hours=12):
+                    client.remove_object(current_app.config["S3_BUCKET_NAME"], obj.object_name)
         # local csv files
         location = "./csv_file"
         for f in os.listdir(location):
