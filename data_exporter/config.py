@@ -31,7 +31,16 @@ class Config:
             "trigger": "cron",  # 指定 定时任务的类型
             "day": "*",
             "hour": "*",
-        }
+        },
+        {
+            "id": "predict_data_metric",  # 一个标识
+            "func": "data_exporter.utils.dataset_helper:predict_data_metric",  # 指定运行的函数
+            "args": None,  # 传入函数的参数
+            "trigger": "cron",  # 指定 定时任务的类型
+            "day": "*",
+            "hour": "*",
+            "minute": "*"
+        },
     ]
     if os.getenv("ENSAAS_SERVICES") is not None:
         ENSAAS_SERVICES = json.loads(os.getenv("ENSAAS_SERVICES"))

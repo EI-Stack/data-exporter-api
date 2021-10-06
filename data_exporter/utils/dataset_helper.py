@@ -4,12 +4,13 @@ import logging
 from datetime import datetime, timedelta
 from uuid import uuid4
 import pandas as pd
+import numpy as np
 from flask import current_app
 
 from data_exporter import scheduler
-from data_exporter.models.ensaas import MongoDB
 from data_exporter.utils.csv_value_helper import check_target, complement_csv_value
-from data_exporter.utils.web_client import DataSetWebClient
+from data_exporter.utils.web_client import DataSetWebClient, EnsaasMongoDB, EKS009MongoDB
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 def transfer_to_big_parameter_id(parameter_id):
@@ -97,7 +98,7 @@ def concat_split_datetime_dataset(date_list, parameter_id):
 
 def spc_routine():
     with scheduler.app.app_context():
-        ensaas = MongoDB()
+        ensaas = EKS009MongoDB()
         ensaas_db = ensaas.DATABASE["iii.pml.task"]
         if not ensaas_db:
             raise logging.info(ensaas_db)
@@ -133,3 +134,45 @@ def spc_routine():
             logging.info("[END QUERY]: " + parameter_id)
         logging.info("[INSERT PARAMETER INFO]: " + parameter_id)
         SpcData.objects.insert(spc_data_list)
+
+
+def eval_metrics(actual, pred):
+    rmse = np.sqrt(mean_squared_error(actual, pred))
+    mae = mean_absolute_error(actual, pred)
+    r2 = r2_score(actual, pred)
+    return rmse, mae, r2
+
+
+def predict_data_metric():
+    with scheduler.app.app_context():
+        ensaas = EnsaasMongoDB()
+        ensaas_db = ensaas.DATABASE["iii.pml.task"]
+        cursor = ensaas_db.find({})
+        eks009 = EKS009MongoDB()
+        eks009_db = eks009.DATABASE
+        for data in cursor:
+            kwh = eks009_db["ifp.core.kwh_real_time"].find(
+                {"parameterNodeId": data.get("ParameterID")}
+            )
+            kwh_p = eks009_db["ifp.core.kwh_real_time_p"].find(
+                {"parameterNodeId": data.get("TaskID")}
+            )
+            kwh_df = pd.DataFrame(list(kwh))
+            kwh_p_df = pd.DataFrame(list(kwh_p))
+            if not kwh_df.empty and not kwh_p_df.empty:
+                df_all = pd.merge(kwh_df, kwh_p_df, on="logTime")
+                rmse, mae, r2 = eval_metrics(
+                    df_all["value_x"].tolist(), df_all["value_y"].tolist()
+                )
+                metric = {"rmse": rmse, "mae": mae, "r2": r2}
+                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID") + '  :' + str(metric))
+                ensaas_db.update(
+                    {"ParameterID": data.get("ParameterID")}, {"$set": {"Metrics": metric}}
+                )
+            else:
+                metric = {"rmse": None, "mae": None, "r2": None}
+                ensaas_db.update(
+                    {"ParameterID": data.get("ParameterID")},
+                    {"$set": {"Metrics": metric}},
+                )
+                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID") + '  :' + str(metric))

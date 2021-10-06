@@ -1,17 +1,15 @@
-import json
 from datetime import datetime, timedelta
 
 import pandas as pd
 from flask import Blueprint, request
 
-from data_exporter.models import SpcData
-from data_exporter.models.ensaas import MongoDB
 from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
     split_datetime,
     concat_split_datetime_dataset,
 )
+from data_exporter.utils.web_client import EKS009MongoDB
 
 spc_bp = Blueprint("spc_bp", __name__)
 
@@ -50,7 +48,7 @@ def get_data_with_limit(parameter_id):
     limit = request.args.get("limit", 10)
     if not limit:
         raise ValueError("Must fill limit count.")
-    mongo = MongoDB()
+    mongo = EKS009MongoDB()
     df_all = pd.DataFrame()
     collection_list = ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]
     for collection in collection_list:

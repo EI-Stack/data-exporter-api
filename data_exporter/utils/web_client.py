@@ -2,7 +2,9 @@ import requests
 import json
 from minio import Minio
 from flask import current_app
-from concurrent.futures import ThreadPoolExecutor, wait
+
+from mongo_proxy import MongoProxy
+from pymongo import MongoClient
 
 query_with_date = """
     query parameter($id: ID! $from: DateTime!, $to: DateTime!) {
@@ -143,3 +145,32 @@ class DataSetWebClient:
         except Exception as e:
             raise e
         return r
+
+
+class EnsaasMongoDB:
+    def __init__(self):
+        mongoClient = MongoProxy(
+            MongoClient(
+                current_app.config["ENSAAS_MONGODB_URL"],
+                username=current_app.config["ENSAAS_MONGODB_USERNAME"],
+                password=current_app.config["ENSAAS_MONGODB_PASSWORD"],
+                authSource=current_app.config["ENSAAS_MONGODB_AUTH_SOURCE"],
+                authMechanism="SCRAM-SHA-1",
+            )
+        )
+        self.DATABASE = mongoClient[current_app.config["ENSAAS_MONGODB_DATABASE"]]
+
+
+class EKS009MongoDB:
+    def __init__(self):
+        mongoClient = MongoProxy(
+            MongoClient(
+                current_app.config["EKS_009_HOST"],
+                username=current_app.config["EKS_009_USERNAME"],
+                password=current_app.config["EKS_009_PASSWORD"],
+                authSource=current_app.config["EKS_009_DATABASE"],
+                # authMechanism="SCRAM-SHA-1",
+            )
+        )
+        self.DATABASE = mongoClient[current_app.config["EKS_009_DATABASE"]]
+
