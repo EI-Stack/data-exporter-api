@@ -39,7 +39,6 @@ class Config:
             "trigger": "cron",  # 指定 定时任务的类型
             "day": "*",
             "hour": "*",
-            "minute": "*"
         },
     ]
     if os.getenv("ENSAAS_SERVICES") is not None:

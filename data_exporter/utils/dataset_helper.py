@@ -9,8 +9,12 @@ from flask import current_app
 
 from data_exporter import scheduler
 from data_exporter.utils.csv_value_helper import check_target, complement_csv_value
-from data_exporter.utils.web_client import DataSetWebClient, EnsaasMongoDB, EKS009MongoDB
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from data_exporter.utils.web_client import (
+    DataSetWebClient,
+    EnsaasMongoDB,
+    EKS009MongoDB,
+)
+from sklearn import metrics
 
 
 def transfer_to_big_parameter_id(parameter_id):
@@ -136,11 +140,13 @@ def spc_routine():
         SpcData.objects.insert(spc_data_list)
 
 
-def eval_metrics(actual, pred):
-    rmse = np.sqrt(mean_squared_error(actual, pred))
-    mae = mean_absolute_error(actual, pred)
-    r2 = r2_score(actual, pred)
-    return rmse, mae, r2
+def evaluate_metrics(true, predicted):
+    mae = metrics.mean_absolute_error(true, predicted)
+    mse = metrics.mean_squared_error(true, predicted)
+    rmse = np.sqrt(metrics.mean_squared_error(true, predicted))
+    r2 = metrics.r2_score(true, predicted)
+    acc = abs(r2 * 100)
+    return mae, mse, rmse, r2, acc
 
 
 def predict_data_metric():
@@ -161,18 +167,25 @@ def predict_data_metric():
             kwh_p_df = pd.DataFrame(list(kwh_p))
             if not kwh_df.empty and not kwh_p_df.empty:
                 df_all = pd.merge(kwh_df, kwh_p_df, on="logTime")
-                rmse, mae, r2 = eval_metrics(
+                mae, mse, rmse, r2, acc = evaluate_metrics(
                     df_all["value_x"].tolist(), df_all["value_y"].tolist()
                 )
-                metric = {"rmse": rmse, "mae": mae, "r2": r2}
-                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID") + '  :' + str(metric))
-                ensaas_db.update(
-                    {"ParameterID": data.get("ParameterID")}, {"$set": {"Metrics": metric}}
-                )
-            else:
-                metric = {"rmse": None, "mae": None, "r2": None}
+                metric = {"mae": mae, "mse": mse, "rmse": rmse, "r2": r2, "acc": acc}
+                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID"))
                 ensaas_db.update(
                     {"ParameterID": data.get("ParameterID")},
                     {"$set": {"Metrics": metric}},
                 )
-                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID") + '  :' + str(metric))
+            else:
+                metric = {
+                    "mae": None,
+                    "mse": None,
+                    "rmse": None,
+                    "r2": None,
+                    "acc": None,
+                }
+                ensaas_db.update(
+                    {"ParameterID": data.get("ParameterID")},
+                    {"$set": {"Metrics": metric}},
+                )
+                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID"))
