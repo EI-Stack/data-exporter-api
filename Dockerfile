@@ -1,10 +1,7 @@
-FROM python:alpine3.6
+FROM python:3.8-slim-buster
 
-RUN apk add --no-cache --update \
-    --no-cache build-base libffi-dev gcc libc6-compat \
-    curl \
-    bash \
-    linux-headers
+RUN apt-get -y update && \
+    apt-get -y install curl bash
 
 
 WORKDIR /app
