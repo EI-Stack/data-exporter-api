@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 
 from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
@@ -57,7 +57,12 @@ def get_data_with_limit(parameter_id):
         df = pd.DataFrame(list(cursor))
         df_all = pd.concat([df_all, df], ignore_index=True)
     if df_all.empty:
-        return {"data": []}
+        return (
+            jsonify(
+                {"message": "Data is not enough"},
+            ),
+            404,
+        )
     df_all = df_all.set_index("logTime")
     target = check_target(df_all)
     if "num" == target:
@@ -68,5 +73,12 @@ def get_data_with_limit(parameter_id):
     df_num = new_df[target]
     df_num = df_num.to_dict()
     values_list = [value for _, value in df_num.items()]
-    values = values_list[-int(limit) :]
+    values = values_list[-int(limit):]
+    if len(values) != int(limit):
+        return (
+            jsonify(
+                {"message": "Data is not enough"},
+            ),
+            404,
+        )
     return {"data": values}

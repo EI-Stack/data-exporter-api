@@ -97,6 +97,8 @@ def get_dataset_file(parameter_id):
     data = json.loads(res.text)
     exist = False
     dataset_id = ""
+    if not data.get("resources"):
+        return {"data": {"bucket": s3_bucket_name}}
     for item in data.get("resources"):
         if item.get("name") == data_set_name:
             dataset_id = item.get("uuid")

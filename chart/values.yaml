@@ -94,7 +94,7 @@ dataExporter:
     EKS_009_HOST: 52.187.125.162:27017
     EKS_009_PASSWORD: mQzC6f5WKLSPCxqMY9TbkKfN
     EKS_009_USERNAME: c1f73afd-207f-4ae1-b86c-bc4ff1942d61
-    EKS_URL: https://ifp-organizer-dmd-eks009.sa.wise-paas.com/graphql
+    IFP_DESK_API_URL: https://ifp-organizer-dmd-eks009.sa.wise-paas.com/graphql
     ENSAAS_SERVICES: '{"mongodb":[{"async":false,"binding_name":"ifps-dev","credentials":{"database":"6dba1e66-a658-445a-b4cc-cb9602bb2d3e","externalHosts":"52.187.110.12:27017","host":"10.0.16.50","host1":"10.0.16.50","host2":"10.0.16.50","host3":"10.0.16.50","internalHosts":"10.0.16.50:27017","password":"RS15YM9WUibOj79kAF86SfaR","port":27017,"port1":27017,"port2":27017,"port3":27017,"uri":"mongodb://5845a1b5-c3e2-438e-9157-a14a559675ad:RS15YM9WUibOj79kAF86SfaR@10.0.16.50:27017/6dba1e66-a658-445a-b4cc-cb9602bb2d3e","username":"5845a1b5-c3e2-438e-9157-a14a559675ad"},"instance_name":"mongodb-e9662ce6-f9ba-4283-91ba-ab5d21e382bb","label":"MongoDB","plan":"Dedicated-Single-Mini","serviceInstanceId":"e9662ce6-f9ba-4283-91ba-ab5d21e382bb","subscriptionId":"e5982feb-262a-4850-aa86-f559adac4930"}]}'
     FLASK_APP: data_exporter.run.py
     INSTANCE_ID: 2174f980-0fc1-5b88-913b-2db9c1deccc5
@@ -114,6 +114,6 @@ dataExporter:
     S3_SECRET_KEY: mSM8eEYrT57votdHj7BPmZdxvN5hSb3I
     SSO_TOKEN: https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token
     TZ: Asia/Shanghai
-    X_IFP_APP_SECRET: OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4
+    IFP_DESK_CLIENT_SECRET: OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4
 
 

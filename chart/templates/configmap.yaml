@@ -4,7 +4,7 @@ metadata:
   name: ifps-data-exporter-cm
 data:
   AFS_URL: {{ quote .Values.dataExporter.configmap.AFS_URL }}
-  EKS_URL: {{ quote .Values.dataExporter.configmap.EKS_URL }}
+  IFP_DESK_API_URL: {{ quote .Values.dataExporter.configmap.IFP_DESK_API_URL }}
   FLASK_APP: {{ quote .Values.dataExporter.configmap.FLASK_APP }}
   INSTANCE_ID: {{ quote .Values.dataExporter.configmap.INSTANCE_ID }}
   MONGODB_HOST: {{ quote .Values.dataExporter.configmap.MONGODB_HOST }}
@@ -21,7 +21,7 @@ data:
   S3_ENDPOINT: {{ quote .Values.dataExporter.configmap.S3_ENDPOINT }}
   S3_SECRET_KEY: {{ quote .Values.dataExporter.configmap.S3_SECRET_KEY }}
   SSO_TOKEN: {{ quote .Values.dataExporter.configmap.SSO_TOKEN }}
-  X_IFP_APP_SECRET: {{ quote .Values.dataExporter.configmap.X_IFP_APP_SECRET }}
+  IFP_DESK_CLIENT_SECRET: {{ quote .Values.dataExporter.configmap.IFP_DESK_CLIENT_SECRET }}
   EKS_009_DATABASE: {{ quote .Values.dataExporter.configmap.EKS_009_DATABASE }}
   EKS_009_HOST: {{ quote .Values.dataExporter.configmap.EKS_009_HOST }}
   EKS_009_PASSWORD: {{ quote .Values.dataExporter.configmap.EKS_009_PASSWORD }}

@@ -4,14 +4,14 @@ import json
 
 
 class Config:
-    EKS_URL = os.getenv("EKS_URL")
+    IFP_DESK_API_URL = os.getenv("IFP_DESK_API_URL")
     AFS_URL = os.getenv("AFS_URL")
     S3_ENDPOINT = os.getenv("S3_ENDPOINT")
     S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
     S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
     S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
     INSTANCE_ID = os.getenv("INSTANCE_ID")
-    X_IFP_APP_SECRET = os.getenv("X_IFP_APP_SECRET")
+    IFP_DESK_CLIENT_SECRET = os.getenv("IFP_DESK_CLIENT_SECRET")
     SSO_TOKEN = os.getenv("SSO_TOKEN")
     SCHEDULER_API_ENABLED = True
     JOBS = [

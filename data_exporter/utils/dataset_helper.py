@@ -144,8 +144,12 @@ def evaluate_metrics(true, predicted):
     mae = metrics.mean_absolute_error(true, predicted)
     mse = metrics.mean_squared_error(true, predicted)
     rmse = np.sqrt(metrics.mean_squared_error(true, predicted))
-    r2 = metrics.r2_score(true, predicted)
-    acc = abs(r2 * 100)
+    mean_observed_data = sum(true) / len(predicted)
+    ss_tot = sum([(y - mean_observed_data) ** 2 for y in true])
+    ss_res = sum([(y - y_hat) ** 2 for y, y_hat in zip(true, predicted)])
+    div = ss_res / ss_tot
+    r2 = 1 - div
+    acc = r2 * 100
     return mae, mse, rmse, r2, acc
 
 

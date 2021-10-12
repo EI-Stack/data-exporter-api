@@ -61,9 +61,9 @@ class DataSetWebClient:
             "content-type": "application/json",
         }
         self.afs_url = current_app.config["AFS_URL"]
-        self.eks_url = current_app.config["EKS_URL"]
+        self.eks_url = current_app.config["IFP_DESK_API_URL"]
         self.instance_id = current_app.config["INSTANCE_ID"]
-        self.ifp_headers = {"X-Ifp-App-Secret": current_app.config["X_IFP_APP_SECRET"]}
+        self.ifp_headers = {"X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]}
 
     @staticmethod
     def get_minio_client(bucket_name):
