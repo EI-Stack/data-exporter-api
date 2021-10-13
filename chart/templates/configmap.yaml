@@ -3,29 +3,23 @@ kind: ConfigMap
 metadata:
   name: ifps-data-exporter-cm
 data:
-  AFS_URL: {{ quote .Values.dataExporter.configmap.AFS_URL }}
-  IFP_DESK_API_URL: {{ quote .Values.dataExporter.configmap.IFP_DESK_API_URL }}
   FLASK_APP: {{ quote .Values.dataExporter.configmap.FLASK_APP }}
-  INSTANCE_ID: {{ quote .Values.dataExporter.configmap.INSTANCE_ID }}
-  MONGODB_HOST: {{ quote .Values.dataExporter.configmap.MONGODB_HOST }}
-  MONGODB_PORT: {{ quote .Values.dataExporter.configmap.MONGODB_PORT }}
-  MONGODB_TABLE_NAME: {{ quote .Values.dataExporter.configmap.MONGODB_TABLE_NAME }}
-  MQTT_BROKER_PORT: {{ quote .Values.dataExporter.configmap.MQTT_BROKER_PORT }}
-  MQTT_BROKER_URL: {{ quote .Values.dataExporter.configmap.MQTT_BROKER_URL }}
-  MQTT_KEEPALIVE: {{ quote .Values.dataExporter.configmap.MQTT_KEEPALIVE }}
-  MQTT_PASSWORD: {{ quote .Values.dataExporter.configmap.MQTT_PASSWORD }}
-  MQTT_REFRESH_TIME: {{ quote .Values.dataExporter.configmap.MQTT_REFRESH_TIME }}
-  MQTT_TLS_ENABLED: {{ quote .Values.dataExporter.configmap.MQTT_TLS_ENABLED }}
-  MQTT_USERNAME: {{ quote .Values.dataExporter.configmap.MQTT_USERNAME }}
-  S3_ACCESS_KEY: {{ quote .Values.dataExporter.configmap.S3_ACCESS_KEY }}
   S3_ENDPOINT: {{ quote .Values.dataExporter.configmap.S3_ENDPOINT }}
+  S3_ACCESS_KEY: {{ quote .Values.dataExporter.configmap.S3_ACCESS_KEY }}
   S3_SECRET_KEY: {{ quote .Values.dataExporter.configmap.S3_SECRET_KEY }}
-  SSO_TOKEN: {{ quote .Values.dataExporter.configmap.SSO_TOKEN }}
-  IFP_DESK_CLIENT_SECRET: {{ quote .Values.dataExporter.configmap.IFP_DESK_CLIENT_SECRET }}
-  EKS_009_DATABASE: {{ quote .Values.dataExporter.configmap.EKS_009_DATABASE }}
-  EKS_009_HOST: {{ quote .Values.dataExporter.configmap.EKS_009_HOST }}
-  EKS_009_PASSWORD: {{ quote .Values.dataExporter.configmap.EKS_009_PASSWORD }}
-  EKS_009_USERNAME: {{ quote .Values.dataExporter.configmap.EKS_009_USERNAME }}
-  ENSAAS_SERVICES: {{ quote .Values.dataExporter.configmap.ENSAAS_SERVICES }}
-  S3_BUCKET_NAME: {{ quote .Values.dataExporter.configmap.S3_BUCKET_NAME }}
+  INSTANCE_ID: {{ quote .Values.dataExporter.configmap.INSTANCE_ID }}
   TZ: {{ quote .Values.dataExporter.configmap.TZ }}
+  S3_BUCKET_NAME: {{ quote .Values.dataExporter.configmap.S3_BUCKET_NAME }}
+  IFP_DESK_API_URL: {{ quote .Values.dataExporter.configmap.IFP_DESK_API_URL }}
+  AFS_DEVELOPMENT_SERVICE_API_URL: {{ quote .Values.dataExporter.configmap.AFS_DEVELOPMENT_SERVICE_API_URL }}
+  IFP_DESK_USERNAME: {{ quote .Values.dataExporter.configmap.IFP_DESK_USERNAME }}
+  IFP_DESK_PASSWORD: {{ quote .Values.dataExporter.configmap.IFP_DESK_PASSWORD }}
+  IFP_DESK_CLIENT_SECRET: {{ quote .Values.dataExporter.configmap.IFP_DESK_CLIENT_SECRET }}
+  IFPS_PREDICT_RETRAIN_API_URL: {{ quote .Values.dataExporter.configmap.IFPS_PREDICT_RETRAIN_API_URL }}
+  ENSAAS_SERVICES: {{ quote .Values.dataExporter.configmap.ENSAAS_SERVICES }}
+  MONGODB_URL: {{ quote .Values.dataExporter.configmap.MONGODB_URL }}
+  MONGODB_USERNAME: {{ quote .Values.dataExporter.configmap.MONGODB_USERNAME }}
+  MONGODB_DATABASE: {{ quote .Values.dataExporter.configmap.MONGODB_DATABASE }}
+  MONGODB_AUTH_SOURCE: {{ quote .Values.dataExporter.configmap.MONGODB_AUTH_SOURCE }}
+  MONGODB_PASSWORD: {{ quote .Values.dataExporter.configmap.MONGODB_PASSWORD }}
+  MONGODB_PASSWORD_FILE: {{ quote .Values.dataExporter.configmap.MONGODB_PASSWORD_FILE }}

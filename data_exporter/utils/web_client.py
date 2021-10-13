@@ -1,3 +1,5 @@
+import time
+
 import requests
 import json
 from minio import Minio
@@ -45,6 +47,40 @@ def get_sso_token():
     return token
 
 
+def get_desk_token():
+    query = {
+        "query": "mutation signIn($input: SignInInput!) {   signIn(input: $input) { user { name __typename} __typename}}",
+        "variables": {
+            "input": {
+                "username": current_app.config["IFP_DESK_USERNAME"],
+                "password": current_app.config["IFP_DESK_PASSWORD"],
+            }
+        },
+    }
+    while True:
+        r = requests.post(current_app.config["IFP_DESK_API_URL"], json=query)
+        if r.status_code == requests.codes.ok:
+            break
+        else:
+            print("[RETRYING_GET_IFP_DESK_HEADERS]")
+            time.sleep(10)
+    if "Set-Cookie" in r.headers:
+        cookie = r.headers["Set-Cookie"].split(";")
+        eiToken = None
+        for i in range(len(cookie)):
+            if "IFPToken" in cookie[i]:
+                ifpToken = cookie[i]
+            if "EIToken" in cookie[i]:
+                eiToken = cookie[i][11:]
+        if eiToken is None:
+            IFP_DESK_HEADERS = {"cookie": ifpToken}
+        else:
+            IFP_DESK_HEADERS = {"cookie": ifpToken + ";" + eiToken}
+        print("[IFP_DESK_HEADERS] ]-->", IFP_DESK_HEADERS)
+        return IFP_DESK_HEADERS
+    return r.headers
+
+
 #  類別拆開 singleturn
 class DataSetWebClient:
     _instance = None
@@ -63,7 +99,12 @@ class DataSetWebClient:
         self.afs_url = current_app.config["AFS_URL"]
         self.eks_url = current_app.config["IFP_DESK_API_URL"]
         self.instance_id = current_app.config["INSTANCE_ID"]
-        self.ifp_headers = {"X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]}
+        if current_app.config["IFP_DESK_CLIENT_SECRET"]:
+            self.ifp_headers = {
+                "X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]
+            }
+        else:
+            self.ifp_headers = get_desk_token()
 
     @staticmethod
     def get_minio_client(bucket_name):
@@ -151,26 +192,25 @@ class EnsaasMongoDB:
     def __init__(self):
         mongoClient = MongoProxy(
             MongoClient(
-                current_app.config["ENSAAS_MONGODB_URL"],
-                username=current_app.config["ENSAAS_MONGODB_USERNAME"],
-                password=current_app.config["ENSAAS_MONGODB_PASSWORD"],
-                authSource=current_app.config["ENSAAS_MONGODB_AUTH_SOURCE"],
+                current_app.config["MONGODB_URL"],
+                username=current_app.config["MONGODB_USERNAME"],
+                password=current_app.config["MONGODB_PASSWORD"],
+                authSource=current_app.config["MONGODB_AUTH_SOURCE"],
                 authMechanism="SCRAM-SHA-1",
             )
         )
-        self.DATABASE = mongoClient[current_app.config["ENSAAS_MONGODB_DATABASE"]]
+        self.DATABASE = mongoClient[current_app.config["MONGODB_DATABASE"]]
 
 
-class EKS009MongoDB:
-    def __init__(self):
-        mongoClient = MongoProxy(
-            MongoClient(
-                current_app.config["EKS_009_HOST"],
-                username=current_app.config["EKS_009_USERNAME"],
-                password=current_app.config["EKS_009_PASSWORD"],
-                authSource=current_app.config["EKS_009_DATABASE"],
-                # authMechanism="SCRAM-SHA-1",
-            )
-        )
-        self.DATABASE = mongoClient[current_app.config["EKS_009_DATABASE"]]
-
+# class EKS009MongoDB:
+#     def __init__(self):
+#         mongoClient = MongoProxy(
+#             MongoClient(
+#                 current_app.config["EKS_009_HOST"],
+#                 username=current_app.config["EKS_009_USERNAME"],
+#                 password=current_app.config["EKS_009_PASSWORD"],
+#                 authSource=current_app.config["EKS_009_DATABASE"],
+#                 # authMechanism="SCRAM-SHA-1",
+#             )
+#         )
+#         self.DATABASE = mongoClient[current_app.config["EKS_009_DATABASE"]]

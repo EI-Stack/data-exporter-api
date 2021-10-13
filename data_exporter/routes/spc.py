@@ -9,7 +9,7 @@ from data_exporter.utils.dataset_helper import (
     split_datetime,
     concat_split_datetime_dataset,
 )
-from data_exporter.utils.web_client import EKS009MongoDB, EnsaasMongoDB
+from data_exporter.utils.web_client import EnsaasMongoDB
 
 spc_bp = Blueprint("spc_bp", __name__)
 
@@ -48,17 +48,26 @@ def get_data_with_limit(parameter_id):
     limit = request.args.get("limit", 10)
     if not limit:
         raise ValueError("Must fill limit count.")
-    ensaas = EnsaasMongoDB()
-    ensaas_db = ensaas.DATABASE["iii.pml.task"]
-    cursor = ensaas_db.find({"ParameterID": parameter_id})
-    if list(cursor)[0].get('UsageType') == 'EnergyDemand':
-        collection = "ifp.core.kw_real_time"
+    mongo = EnsaasMongoDB()
+    mongo_db = mongo.DATABASE["iii.pml.task"]
+    df_all = pd.DataFrame()
+    if mongo_db:
+        cursor = mongo_db.find({"ParameterID": parameter_id})
+        if list(cursor)[0].get('UsageType') == 'EnergyDemand':
+            collection = "ifp.core.kw_real_time"
+        else:
+            collection = "ifp.core.kwh_real_time"
+        mongo_db = mongo.DATABASE[collection]
+        cursor = mongo_db.find({"parameterNodeId": parameter_id})
+        df_all = pd.DataFrame(list(cursor))
+        print(df_all)
     else:
-        collection = "ifp.core.kwh_real_time"
-    mongo = EKS009MongoDB()
-    mongo_db = mongo.DATABASE[collection]
-    cursor = mongo_db.find({"parameterNodeId": parameter_id})
-    df_all = pd.DataFrame(list(cursor))
+        for collection in ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]:
+            mongo_db = mongo.DATABASE[collection]
+            cursor = mongo_db.find({"parameterNodeId": parameter_id})
+            df = pd.DataFrame(list(cursor))
+            df_all = pd.concat([df_all, df], ignore_index=True)
+        print('else', df_all)
     if df_all.empty:
         return (
             jsonify(

@@ -8,7 +8,7 @@ image:
   repository: nexus-docker-registry.iii-ei-stack.com/data_exporter
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.3.3"
+  tag: "0.3.4"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -89,31 +89,25 @@ affinity: {}
 
 dataExporter:
   configmap:
-    AFS_URL: http://api-afs-stage2-eks006.sa.wise-paas.com
-    EKS_009_DATABASE: 6671330c-7838-4635-8ee4-f71b521a51aa
-    EKS_009_HOST: 52.187.125.162:27017
-    EKS_009_PASSWORD: mQzC6f5WKLSPCxqMY9TbkKfN
-    EKS_009_USERNAME: c1f73afd-207f-4ae1-b86c-bc4ff1942d61
-    IFP_DESK_API_URL: https://ifp-organizer-dmd-eks009.sa.wise-paas.com/graphql
-    ENSAAS_SERVICES: '{"mongodb":[{"async":false,"binding_name":"ifps-dev","credentials":{"database":"6dba1e66-a658-445a-b4cc-cb9602bb2d3e","externalHosts":"52.187.110.12:27017","host":"10.0.16.50","host1":"10.0.16.50","host2":"10.0.16.50","host3":"10.0.16.50","internalHosts":"10.0.16.50:27017","password":"RS15YM9WUibOj79kAF86SfaR","port":27017,"port1":27017,"port2":27017,"port3":27017,"uri":"mongodb://5845a1b5-c3e2-438e-9157-a14a559675ad:RS15YM9WUibOj79kAF86SfaR@10.0.16.50:27017/6dba1e66-a658-445a-b4cc-cb9602bb2d3e","username":"5845a1b5-c3e2-438e-9157-a14a559675ad"},"instance_name":"mongodb-e9662ce6-f9ba-4283-91ba-ab5d21e382bb","label":"MongoDB","plan":"Dedicated-Single-Mini","serviceInstanceId":"e9662ce6-f9ba-4283-91ba-ab5d21e382bb","subscriptionId":"e5982feb-262a-4850-aa86-f559adac4930"}]}'
     FLASK_APP: data_exporter.run.py
-    INSTANCE_ID: 2174f980-0fc1-5b88-913b-2db9c1deccc5
-    MONGODB_HOST: mongodb.default.svc.cluster.local
-    MONGODB_PORT: "27017"
-    MONGODB_TABLE_NAME: data_set
-    MQTT_BROKER_PORT: "31883"
-    MQTT_BROKER_URL: e150-01.eistack100.iii-ei-stack.com
-    MQTT_KEEPALIVE: "5"
-    MQTT_PASSWORD: g0kBqOviZ8
-    MQTT_REFRESH_TIME: "1.0"
-    MQTT_TLS_ENABLED: "False"
-    MQTT_USERNAME: iii-eistack
-    S3_ACCESS_KEY: Bknu1IKIfK5it1XnseDh4GsuzwhAG1JF
-    S3_BUCKET_NAME: data-exporter-file
     S3_ENDPOINT: ai-storage.amp.iii-ei-stack.com
+    S3_ACCESS_KEY: Bknu1IKIfK5it1XnseDh4GsuzwhAG1JF
     S3_SECRET_KEY: mSM8eEYrT57votdHj7BPmZdxvN5hSb3I
-    SSO_TOKEN: https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/api/v1/token
+    INSTANCE_ID: 2174f980-0fc1-5b88-913b-2db9c1deccc5
     TZ: Asia/Shanghai
+    S3_BUCKET_NAME: data-exporter-file
+    IFP_DESK_API_URL: https://ifp-organizer-dmd-eks009.sa.wise-paas.com/graphql
+    AFS_DEVELOPMENT_SERVICE_API_URL: http://api-afs-stage2-eks006.sa.wise-paas.com
+    IFP_DESK_USERNAME: ifs@advantech.com
+    IFP_DESK_PASSWORD: password
     IFP_DESK_CLIENT_SECRET: OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4
+    IFPS_PREDICT_RETRAIN_API_URL: https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com
+    ENSAAS_SERVICES: '{"mongodb":[{"async":false,"binding_name":"ifps-dev","credentials":{"database":"6dba1e66-a658-445a-b4cc-cb9602bb2d3e","externalHosts":"52.187.110.12:27017","host":"10.0.16.50","host1":"10.0.16.50","host2":"10.0.16.50","host3":"10.0.16.50","internalHosts":"10.0.16.50:27017","password":"RS15YM9WUibOj79kAF86SfaR","port":27017,"port1":27017,"port2":27017,"port3":27017,"uri":"mongodb://5845a1b5-c3e2-438e-9157-a14a559675ad:RS15YM9WUibOj79kAF86SfaR@10.0.16.50:27017/6dba1e66-a658-445a-b4cc-cb9602bb2d3e","username":"5845a1b5-c3e2-438e-9157-a14a559675ad"},"instance_name":"mongodb-e9662ce6-f9ba-4283-91ba-ab5d21e382bb","label":"MongoDB","plan":"Dedicated-Single-Mini","serviceInstanceId":"e9662ce6-f9ba-4283-91ba-ab5d21e382bb","subscriptionId":"e5982feb-262a-4850-aa86-f559adac4930"}]}'
+    MONGODB_URL: 52.187.125.162:27017
+    MONGODB_USERNAME: c1f73afd-207f-4ae1-b86c-bc4ff1942d61
+    MONGODB_DATABASE: 6671330c-7838-4635-8ee4-f71b521a51aa
+    MONGODB_AUTH_SOURCE: 6671330c-7838-4635-8ee4-f71b521a51aa
+    MONGODB_PASSWORD: mQzC6f5WKLSPCxqMY9TbkKfN
+    MONGODB_PASSWORD_FILE: /run/secrets/mongo-root_password
 
 

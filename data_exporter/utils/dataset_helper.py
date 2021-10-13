@@ -12,7 +12,6 @@ from data_exporter.utils.csv_value_helper import check_target, complement_csv_va
 from data_exporter.utils.web_client import (
     DataSetWebClient,
     EnsaasMongoDB,
-    EKS009MongoDB,
 )
 from sklearn import metrics
 
@@ -102,7 +101,7 @@ def concat_split_datetime_dataset(date_list, parameter_id):
 
 def spc_routine():
     with scheduler.app.app_context():
-        ensaas = EKS009MongoDB()
+        ensaas = EnsaasMongoDB()
         ensaas_db = ensaas.DATABASE["iii.pml.task"]
         if not ensaas_db:
             raise logging.info(ensaas_db)
@@ -157,8 +156,10 @@ def predict_data_metric():
     with scheduler.app.app_context():
         ensaas = EnsaasMongoDB()
         ensaas_db = ensaas.DATABASE["iii.pml.task"]
+        if not ensaas_db:
+            raise logging.info(ensaas_db)
         cursor = ensaas_db.find({})
-        eks009 = EKS009MongoDB()
+        eks009 = EnsaasMongoDB()
         eks009_db = eks009.DATABASE
         for data in cursor:
             kwh = eks009_db["ifp.core.kwh_real_time"].find(
