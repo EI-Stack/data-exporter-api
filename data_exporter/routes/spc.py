@@ -9,7 +9,7 @@ from data_exporter.utils.dataset_helper import (
     split_datetime,
     concat_split_datetime_dataset,
 )
-from data_exporter.utils.web_client import EKS009MongoDB
+from data_exporter.utils.web_client import EKS009MongoDB, EnsaasMongoDB
 
 spc_bp = Blueprint("spc_bp", __name__)
 
@@ -48,14 +48,17 @@ def get_data_with_limit(parameter_id):
     limit = request.args.get("limit", 10)
     if not limit:
         raise ValueError("Must fill limit count.")
+    ensaas = EnsaasMongoDB()
+    ensaas_db = ensaas.DATABASE["iii.pml.task"]
+    cursor = ensaas_db.find({"ParameterID": parameter_id})
+    if list(cursor)[0].get('UsageType') == 'EnergyDemand':
+        collection = "ifp.core.kw_real_time"
+    else:
+        collection = "ifp.core.kwh_real_time"
     mongo = EKS009MongoDB()
-    df_all = pd.DataFrame()
-    collection_list = ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]
-    for collection in collection_list:
-        mongo_db = mongo.DATABASE[collection]
-        cursor = mongo_db.find({"parameterNodeId": parameter_id})
-        df = pd.DataFrame(list(cursor))
-        df_all = pd.concat([df_all, df], ignore_index=True)
+    mongo_db = mongo.DATABASE[collection]
+    cursor = mongo_db.find({"parameterNodeId": parameter_id})
+    df_all = pd.DataFrame(list(cursor))
     if df_all.empty:
         return (
             jsonify(
@@ -63,6 +66,10 @@ def get_data_with_limit(parameter_id):
             ),
             404,
         )
+    match_key = ['deviceKindUsage', 'energyDeviceKind', 'machineNodeId']
+    df_key = df_all.groupby(match_key)
+    res_key = [i[0]for i in df_key][0]
+    res_dict = dict(zip(match_key, res_key))
     df_all = df_all.set_index("logTime")
     target = check_target(df_all)
     if "num" == target:
@@ -81,4 +88,5 @@ def get_data_with_limit(parameter_id):
             ),
             404,
         )
-    return {"data": values}
+    res_dict.update({"data": values})
+    return res_dict
