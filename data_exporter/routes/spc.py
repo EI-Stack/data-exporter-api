@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from flask import Blueprint, request, jsonify, current_app
+from pymongo import ASCENDING, DESCENDING
 
 from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
@@ -45,7 +46,7 @@ def get_data_with_limit(parameter_id):
     if not parameter_id:
         raise ValueError("Can not Find parameter_id")
     # parameter_id = transfer_to_big_parameter_id(parameter_id)
-    limit = request.args.get("limit", 10)
+    limit = int(request.args.get("limit", 10))
     if not limit:
         raise ValueError("Must fill limit count.")
     mongo = EnsaasMongoDB()
@@ -67,15 +68,14 @@ def get_data_with_limit(parameter_id):
         else:
             collection = "ifp.core.kwh_real_time"
         mongo_db = mongo.DATABASE[collection]
-        cursor = mongo_db.find({"parameterNodeId": parameter_id})
+        cursor = mongo_db.find({"parameterNodeId": parameter_id}).sort([('logTime', DESCENDING)]).limit(limit)
         df_all = pd.DataFrame(list(cursor))
     else:
         for collection in ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]:
             mongo_db = mongo.DATABASE[collection]
-            cursor = mongo_db.find({"parameterNodeId": parameter_id})
+            cursor = mongo_db.find({"parameterNodeId": parameter_id}).sort([('logTime', DESCENDING)]).limit(limit)
             df = pd.DataFrame(list(cursor))
             df_all = pd.concat([df_all, df], ignore_index=True)
-        print('else', df_all)
     if df_all.empty:
         return (
             jsonify(
@@ -87,23 +87,24 @@ def get_data_with_limit(parameter_id):
     df_key = df_all.groupby(match_key)
     res_key = [i[0]for i in df_key][0]
     res_dict = dict(zip(match_key, res_key))
-    df_all = df_all.set_index("logTime")
+    # df_all = df_all.set_index("logTime")
     target = check_target(df_all)
-    if "num" == target:
-        new_df = df_all.num.resample(rule="15T").mean().ffill()
-    else:
-        new_df = df_all.value.resample(rule="15T").mean().ffill()
-    new_df = new_df.reset_index()
-    df_num = new_df[target]
+    # if "num" == target:
+    #     new_df = df_all.num.resample(rule="15T").mean().ffill()
+    # else:
+    #     new_df = df_all.value.resample(rule="15T").mean().ffill()
+    # new_df = new_df.reset_index()
+    df_num = df_all[target]
     df_num = df_num.to_dict()
     values_list = [value for _, value in df_num.items()]
-    values = values_list[-int(limit):]
-    if len(values) != int(limit):
+    # values = values_list[-int(limit):]
+    values_list.reverse()
+    if len(values_list) != int(limit):
         return (
             jsonify(
                 {"message": "Data is not enough"},
             ),
             404,
         )
-    res_dict.update({"data": values})
+    res_dict.update({"data": values_list})
     return res_dict

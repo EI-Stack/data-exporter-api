@@ -142,3 +142,4 @@ venv/
 
 /deploy/plugins
 /csv_file
+.idea/
