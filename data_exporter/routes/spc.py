@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 
 from data_exporter.utils.csv_value_helper import complement_csv_value, check_target
 from data_exporter.utils.dataset_helper import (
@@ -53,14 +53,22 @@ def get_data_with_limit(parameter_id):
     df_all = pd.DataFrame()
     if mongo_db:
         cursor = mongo_db.find({"ParameterID": parameter_id})
-        if list(cursor)[0].get('UsageType') == 'EnergyDemand':
+        data = list(cursor)
+        # print(list(cursor)[0].get('UsageType'))
+        if not data:
+            return (
+                jsonify(
+                    {"message": "Data is not enough"},
+                ),
+                404,
+            )
+        if data[0].get('UsageType') == 'EnergyDemand':
             collection = "ifp.core.kw_real_time"
         else:
             collection = "ifp.core.kwh_real_time"
         mongo_db = mongo.DATABASE[collection]
         cursor = mongo_db.find({"parameterNodeId": parameter_id})
         df_all = pd.DataFrame(list(cursor))
-        print(df_all)
     else:
         for collection in ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]:
             mongo_db = mongo.DATABASE[collection]
