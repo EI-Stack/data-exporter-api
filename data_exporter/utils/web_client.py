@@ -47,40 +47,6 @@ def get_sso_token():
     return token
 
 
-def get_desk_token():
-    query = {
-        "query": "mutation signIn($input: SignInInput!) {   signIn(input: $input) { user { name __typename} __typename}}",
-        "variables": {
-            "input": {
-                "username": current_app.config["IFP_DESK_USERNAME"],
-                "password": current_app.config["IFP_DESK_PASSWORD"],
-            }
-        },
-    }
-    while True:
-        r = requests.post(current_app.config["IFP_DESK_API_URL"], json=query)
-        if r.status_code == requests.codes.ok:
-            break
-        else:
-            print("[RETRYING_GET_IFP_DESK_HEADERS]")
-            time.sleep(10)
-    if "Set-Cookie" in r.headers:
-        cookie = r.headers["Set-Cookie"].split(";")
-        eiToken = None
-        for i in range(len(cookie)):
-            if "IFPToken" in cookie[i]:
-                ifpToken = cookie[i]
-            if "EIToken" in cookie[i]:
-                eiToken = cookie[i][11:]
-        if eiToken is None:
-            IFP_DESK_HEADERS = {"cookie": ifpToken}
-        else:
-            IFP_DESK_HEADERS = {"cookie": ifpToken + ";" + eiToken}
-        print("[IFP_DESK_HEADERS] ]-->", IFP_DESK_HEADERS)
-        return IFP_DESK_HEADERS
-    return r.headers
-
-
 #  類別拆開 singleturn
 class DataSetWebClient:
     _instance = None
@@ -99,12 +65,9 @@ class DataSetWebClient:
         self.afs_url = current_app.config["AFS_URL"]
         self.eks_url = current_app.config["IFP_DESK_API_URL"]
         self.instance_id = current_app.config["INSTANCE_ID"]
-        if current_app.config["IFP_DESK_CLIENT_SECRET"]:
-            self.ifp_headers = {
-                "X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]
-            }
-        else:
-            self.ifp_headers = get_desk_token()
+        self.ifp_headers = {
+            "X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]
+        }
 
     @staticmethod
     def get_minio_client(bucket_name):
