@@ -40,13 +40,6 @@ query_with_limit = """
 """
 
 
-def get_sso_token():
-    r = requests.get(current_app.config["SSO_TOKEN"])
-    result = json.loads(r.text)
-    token = result.get("Authorization")
-    return token
-
-
 #  類別拆開 singleturn
 class DataSetWebClient:
     _instance = None
@@ -58,7 +51,7 @@ class DataSetWebClient:
 
     def __init__(self):
         self.token_headers = {
-            "Authorization": get_sso_token(),
+            "Authorization": current_app.config["SSO_TOKEN"],
             "accept": "application/json",
             "content-type": "application/json",
         }
