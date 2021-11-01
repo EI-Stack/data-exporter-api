@@ -1,5 +1,6 @@
+import json
 from datetime import datetime, timedelta
-
+import numpy as np
 import pandas as pd
 from flask import Blueprint, request, jsonify, current_app
 from pymongo import ASCENDING, DESCENDING
@@ -116,4 +117,71 @@ def get_data_with_limit(parameter_id):
             404,
         )
     res_dict.update({"data": values_list})
+    return res_dict
+
+
+@spc_bp.route("/inference/<parameter_id>", methods=["GET"])
+def get_inference_with_minutes(parameter_id):
+    if not parameter_id:
+        raise ValueError("Can not Find parameter_id")
+    minutes = int(request.args.get("minutes", 10))
+    if not minutes:
+        if minutes == 0:
+            return {"data": []}
+        raise ValueError("Must fill the 'minutes' parameter.")
+    end = datetime.utcnow()
+    start = end - timedelta(minutes=minutes)
+    mongo = EnsaasMongoDB()
+    mongo_db = mongo.DATABASE["iii.pml.task"]
+    df_all = pd.DataFrame()
+    if mongo_db:
+        cursor = mongo_db.find({"ParameterID": parameter_id})
+        data = list(cursor)
+        # print(list(cursor)[0].get('UsageType'))
+        if not data:
+            return (
+                jsonify(
+                    {"message": "Data is not enough"},
+                ),
+                404,
+            )
+        if data[0].get('UsageType') == 'EnergyDemand':
+            collection = "ifp.core.kw_real_time"
+        elif data[0].get('UsageType') == 'EnergyConsumption':
+            collection = "ifp.core.kwh_real_time"
+        else:
+            return (
+                jsonify(
+                    {"message": "Data is not found in 'UsageType'"},
+                ),
+                404,
+            )
+        mongo_db = mongo.DATABASE[collection]
+        cursor = mongo_db.find({"parameterNodeId": parameter_id,  'logTime': {'$gte': start, '$lt': end}})\
+            .sort([('logTime', DESCENDING)])
+        df_all = pd.DataFrame(list(cursor))
+    else:
+        for collection in ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]:
+            mongo_db = mongo.DATABASE[collection]
+            cursor = mongo_db.find({"parameterNodeId": parameter_id, 'logTime': {'$gte': start, '$lt': end}}) \
+                .sort([('logTime', DESCENDING)])
+            df = pd.DataFrame(list(cursor))
+            df_all = pd.concat([df_all, df], ignore_index=True)
+    if df_all.empty:
+        return (
+            jsonify(
+                {"message": "Data is not enough"},
+            ),
+            404,
+        )
+    match_key = ['deviceKindUsage', 'energyDeviceKind', 'machineNodeId']
+    df_key = df_all.groupby(match_key)
+    res_key = [i[0]for i in df_key][0]
+    res_dict = dict(zip(match_key, res_key))
+    target = check_target(df_all)
+    df_all['logTime'] = df_all['logTime'].apply(
+        lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    )
+    df_array = np.array(df_all[['logTime', target]]).tolist()
+    res_dict.update({"data": df_array})
     return res_dict
