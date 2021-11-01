@@ -137,11 +137,12 @@ def get_inference_with_minutes(parameter_id):
     if mongo_db:
         cursor = mongo_db.find({"ParameterID": parameter_id})
         data = list(cursor)
+        print(data)
         # print(list(cursor)[0].get('UsageType'))
         if not data:
             return (
                 jsonify(
-                    {"message": "Data is not enough"},
+                    {"message": "Not found parameter"},
                 ),
                 404,
             )
@@ -168,12 +169,7 @@ def get_inference_with_minutes(parameter_id):
             df = pd.DataFrame(list(cursor))
             df_all = pd.concat([df_all, df], ignore_index=True)
     if df_all.empty:
-        return (
-            jsonify(
-                {"message": "Data is not enough"},
-            ),
-            404,
-        )
+        return {"data": []}
     match_key = ['deviceKindUsage', 'energyDeviceKind', 'machineNodeId']
     df_key = df_all.groupby(match_key)
     res_key = [i[0]for i in df_key][0]
