@@ -48,6 +48,8 @@ def get_data_with_limit(parameter_id):
     # parameter_id = transfer_to_big_parameter_id(parameter_id)
     limit = int(request.args.get("limit", 10))
     if not limit:
+        if limit == 0:
+            return {"data": []}
         raise ValueError("Must fill limit count.")
     mongo = EnsaasMongoDB()
     mongo_db = mongo.DATABASE["iii.pml.task"]
@@ -65,8 +67,15 @@ def get_data_with_limit(parameter_id):
             )
         if data[0].get('UsageType') == 'EnergyDemand':
             collection = "ifp.core.kw_real_time"
-        else:
+        elif data[0].get('UsageType') == 'EnergyConsumption':
             collection = "ifp.core.kwh_real_time"
+        else:
+            return (
+                jsonify(
+                    {"message": "Data is not found in 'UsageType'"},
+                ),
+                404,
+            )
         mongo_db = mongo.DATABASE[collection]
         cursor = mongo_db.find({"parameterNodeId": parameter_id}).sort([('logTime', DESCENDING)]).limit(limit)
         df_all = pd.DataFrame(list(cursor))
