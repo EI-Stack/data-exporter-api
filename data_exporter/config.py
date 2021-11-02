@@ -12,10 +12,10 @@ class Config:
     SCHEDULER_API_ENABLED = True
     try:
         r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
-        res_env = json.loads(r.text)
     except:
         print("Can not get environment response.")
-    if res_env:
+    if r.status_code == 200:
+        res_env = json.loads(r.text)
         INSTANCE_ID = res_env.get("AFS_INSTANCESID")
         SSO_TOKEN = "Bearer " + res_env.get("Authorization")
         AFS_URL = res_env.get("AFS_API_URL")
@@ -32,7 +32,7 @@ class Config:
         S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "Bknu1IKIfK5it1XnseDh4GsuzwhAG1JF")
         S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "mSM8eEYrT57votdHj7BPmZdxvN5hSb3I")
         INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
-        r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
+        # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
         SSO_TOKEN = json.loads(r.text).get("Authorization")
     if os.getenv("ENSAAS_SERVICES") is not None:
         ENSAAS_SERVICES = json.loads(os.getenv("ENSAAS_SERVICES"))

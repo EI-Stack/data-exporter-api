@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
@@ -137,7 +138,6 @@ def get_inference_with_minutes(parameter_id):
     if mongo_db:
         cursor = mongo_db.find({"ParameterID": parameter_id})
         data = list(cursor)
-        print(data)
         # print(list(cursor)[0].get('UsageType'))
         if not data:
             return (
@@ -158,9 +158,10 @@ def get_inference_with_minutes(parameter_id):
                 404,
             )
         mongo_db = mongo.DATABASE[collection]
-        cursor = mongo_db.find({"parameterNodeId": parameter_id,  'logTime': {'$gte': start, '$lt': end}})\
+        cursor = mongo_db.find({"parameterNodeId": parameter_id, 'logTime': {'$gte': start, '$lt': end}}) \
             .sort([('logTime', DESCENDING)])
-        df_all = pd.DataFrame(list(cursor))
+        data = list(cursor)
+        df_all = pd.DataFrame(data)
     else:
         for collection in ["ifp.core.kw_real_time", "ifp.core.kwh_real_time"]:
             mongo_db = mongo.DATABASE[collection]

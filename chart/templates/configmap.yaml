@@ -16,7 +16,7 @@ data:
   IFP_DESK_PASSWORD: {{ quote .Values.dataExporter.configmap.IFP_DESK_PASSWORD }}
   IFP_DESK_CLIENT_SECRET: {{ quote .Values.dataExporter.configmap.IFP_DESK_CLIENT_SECRET }}
   IFPS_PREDICT_RETRAIN_API_URL: {{ quote .Values.dataExporter.configmap.IFPS_PREDICT_RETRAIN_API_URL }}
-  ENSAAS_SERVICES: {{ quote .Values.dataExporter.configmap.ENSAAS_SERVICES }}
+#  ENSAAS_SERVICES: {{ quote .Values.dataExporter.configmap.ENSAAS_SERVICES }}
   MONGODB_URL: {{ quote .Values.dataExporter.configmap.MONGODB_URL }}
   MONGODB_USERNAME: {{ quote .Values.dataExporter.configmap.MONGODB_USERNAME }}
   MONGODB_DATABASE: {{ quote .Values.dataExporter.configmap.MONGODB_DATABASE }}

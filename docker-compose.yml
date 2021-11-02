@@ -2,7 +2,7 @@ version: "3.7"
 services:
   data-exporter-api:
     container_name: "data-exporter-api"
-    image: nexus-docker-registry.iii-ei-stack.com/data_exporter:0.3.5
+    image: iiicondor/ifps-predict-exporter:0.3.26
     ports:
       - "5000:5000"
     env_file:

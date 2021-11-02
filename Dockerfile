@@ -1,7 +1,7 @@
 FROM python:3.8-slim-buster
 
 RUN apt-get -y update && \
-    apt-get -y install curl bash
+    apt-get -y install curl bash vim
 
 
 WORKDIR /app
