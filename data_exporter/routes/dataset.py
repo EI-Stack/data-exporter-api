@@ -17,7 +17,7 @@ from data_exporter.utils.csv_value_helper import (
     check_data_count,
     check_target,
 )
-from data_exporter.utils.web_client import DataSetWebClient
+from data_exporter.utils.web_client import DataSetWebClient, AzureBlob
 
 # print(mqtt.broker_url)
 dataset_bp = Blueprint("dataset_bp", __name__)
@@ -85,14 +85,8 @@ def get_dataset_file(parameter_id):
     normalized_df.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
     csv_bytes = normalized_df.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
-    client = dataset_web_client.get_minio_client(s3_bucket_name)
-    client.put_object(
-        s3_bucket_name,
-        f"{file_name}.csv",
-        data=csv_buffer,
-        length=len(csv_bytes),
-        content_type="application/csv",
-    )
+    azure_blob = AzureBlob(current_app.config["AZURE_STORAGE_CONNECTION"])
+    azure_blob.UploadFile(s3_bucket_name, "./csv_file", f"{file_name}.csv")
     res = dataset_web_client.get_dataset_information()
     data = json.loads(res.text)
     exist = False
@@ -121,7 +115,8 @@ def get_dataset_file(parameter_id):
             "bucket": s3_bucket_name,
             "file": f"{file_name}.csv",
             "dataset_id": dataset_id,
-            "target": target,
+            "target_col": target,
+            "index_col": "logTime"
         }
     }
     return data_dict

@@ -9,6 +9,7 @@ class Config:
     S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "data-exporter-file")
     IFP_DESK_USERNAME = os.getenv("IFP_DESK_USERNAME")
     IFP_DESK_PASSWORD = os.getenv("IFP_DESK_PASSWORD")
+    IFP_DESK_API_URL = os.getenv("IFP_DESK_API_URL")
     SCHEDULER_API_ENABLED = True
     try:
         r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
@@ -17,20 +18,14 @@ class Config:
     if r.status_code == 200:
         res_env = json.loads(r.text)
         INSTANCE_ID = res_env.get("AFS_INSTANCESID")
+        AZURE_STORAGE_CONNECTION = res_env.get("AZURE_STORAGE_CONNECTION")
+        AZURE_STORAGE_ACCOUNT_NAME = res_env.get("AZURE_STORAGE_ACCOUNT_NAME")
+        AZURE_STORAGE_ACCOUNT_KEY = res_env.get("AZURE_STORAGE_ACCOUNT_KEY")
         SSO_TOKEN = "Bearer " + res_env.get("Authorization")
         AFS_URL = res_env.get("AFS_API_URL")
-        IFP_DESK_API_URL = res_env.get("IFP_DESK_API_URL")
-        S3_ACCESS_KEY = res_env.get("S3_ACCESSKEY")
-        S3_SECRET_KEY = res_env.get("S3_SECRETKEY")
-        S3_ENDPOINT = res_env.get("S3_API_URL").replace(":443", "")
         IFP_DESK_CLIENT_SECRET = res_env.get("IFP_DESK_CLIENT_SECRET")
-        print(SSO_TOKEN)
     else:
-        IFP_DESK_API_URL = os.getenv("IFP_DESK_API_URL")
         AFS_URL = os.getenv("AFS_DEVELOPMENT_SERVICE_API_URL")
-        S3_ENDPOINT = os.getenv("S3_ENDPOINT", "ai-storage.amp.iii-ei-stack.com")
-        S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "Bknu1IKIfK5it1XnseDh4GsuzwhAG1JF")
-        S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "mSM8eEYrT57votdHj7BPmZdxvN5hSb3I")
         INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
         # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
         SSO_TOKEN = json.loads(r.text).get("Authorization")

@@ -8,7 +8,7 @@ image:
   repository: iiicondor/ifps-predict-exporter
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.3.26"
+  tag: "0.3.27"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -101,7 +101,7 @@ dataExporter:
     IFP_DESK_USERNAME: ifs@advantech.com
     IFP_DESK_PASSWORD: password
     IFP_DESK_CLIENT_SECRET: OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4
-    IFPS_PREDICT_RETRAIN_API_URL: https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com
+    IFPS_PREDICT_RETRAIN_API_URL: https://ifps-predict-train-ifpsdev-eks005.sa.wise-paas.com/v2
     # ENSAAS_SERVICES: '{"mongodb":[{"async":false,"binding_name":"ifps-dev","credentials":{"database":"6dba1e66-a658-445a-b4cc-cb9602bb2d3e","externalHosts":"52.187.110.12:27017","host":"10.0.16.50","host1":"10.0.16.50","host2":"10.0.16.50","host3":"10.0.16.50","internalHosts":"10.0.16.50:27017","password":"RS15YM9WUibOj79kAF86SfaR","port":27017,"port1":27017,"port2":27017,"port3":27017,"uri":"mongodb://5845a1b5-c3e2-438e-9157-a14a559675ad:RS15YM9WUibOj79kAF86SfaR@10.0.16.50:27017/6dba1e66-a658-445a-b4cc-cb9602bb2d3e","username":"5845a1b5-c3e2-438e-9157-a14a559675ad"},"instance_name":"mongodb-e9662ce6-f9ba-4283-91ba-ab5d21e382bb","label":"MongoDB","plan":"Dedicated-Single-Mini","serviceInstanceId":"e9662ce6-f9ba-4283-91ba-ab5d21e382bb","subscriptionId":"e5982feb-262a-4850-aa86-f559adac4930"}]}'
     MONGODB_URL: 52.187.125.162:27017
     MONGODB_USERNAME: c1f73afd-207f-4ae1-b86c-bc4ff1942d61

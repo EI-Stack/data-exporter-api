@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from flask import current_app
 
 from data_exporter import scheduler
-from data_exporter.utils.web_client import DataSetWebClient
+from data_exporter.utils.web_client import AzureBlob
 
 SPLIT_TIME = 15
 
@@ -71,20 +71,19 @@ def check_target(df):
 
 def clean_csv():
     with scheduler.app.app_context():
-        # MinIO csv files
-        dataset_web_client = DataSetWebClient()
-        client = dataset_web_client.get_minio_client(
+        now = datetime.utcnow()
+        azure_blob = AzureBlob(current_app.config["AZURE_STORAGE_CONNECTION"])
+        generator = azure_blob.blob_service_client.get_container_client(
             current_app.config["S3_BUCKET_NAME"]
         )
-        objects_to_delete = client.list_objects(
-            current_app.config["S3_BUCKET_NAME"], recursive=True
-        )
-        now = datetime.utcnow()
-        if objects_to_delete:
-            for obj in objects_to_delete:
-                if now - obj.last_modified.replace(tzinfo=None) > timedelta(hours=12):
-                    client.remove_object(current_app.config["S3_BUCKET_NAME"], obj.object_name)
-        # local csv files
+        for blob in generator.list_blobs():
+            if (
+                now - blob.last_modified.replace(tzinfo=None) > timedelta(hours=12)
+            ) and (blob.name != "ATML_BE5P1_KW.csv"):
+                blob_client = azure_blob.blob_service_client.get_blob_client(
+                    container=current_app.config["S3_BUCKET_NAME"], blob=blob.name
+                )
+                blob_client.delete_blob()
         location = "./csv_file"
         for f in os.listdir(location):
             file_name = f"{location}/{f}"
@@ -93,3 +92,17 @@ def clean_csv():
             if now - creation_time > timedelta(hours=12):
                 os.remove(file_name)
                 logging.info("[DELETE_CSV_FILE]:  " + file_name)
+
+        # MinIO csv files
+        # dataset_web_client = DataSetWebClient()
+        # client = dataset_web_client.get_minio_client(
+        #     current_app.config["S3_BUCKET_NAME"]
+        # )
+        # objects_to_delete = client.list_objects(
+        #     current_app.config["S3_BUCKET_NAME"], recursive=True
+        # )
+        # if objects_to_delete:
+        #     for obj in objects_to_delete:
+        #         if now - obj.last_modified.replace(tzinfo=None) > timedelta(hours=12):
+        #             client.remove_object(current_app.config["S3_BUCKET_NAME"], obj.object_name)
+        # local csv files

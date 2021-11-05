@@ -1,10 +1,10 @@
 import time
-
+import os
 import requests
 import json
 from minio import Minio
 from flask import current_app
-
+from azure.storage.blob import BlobServiceClient, __version__
 from mongo_proxy import MongoProxy
 from pymongo import MongoClient
 
@@ -104,7 +104,7 @@ class DataSetWebClient:
     def get_dataset_information(self):
         try:
             r = requests.get(
-                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets",
+                f"{self.afs_url}/instances/{self.instance_id}/datasets",
                 headers=self.token_headers,
             )
         except Exception as e:
@@ -114,7 +114,7 @@ class DataSetWebClient:
     def get_dataset_config(self, dataset_uuid):
         try:
             r = requests.get(
-                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets/{dataset_uuid}",
+                f"{self.afs_url}/instances/{self.instance_id}/datasets/{dataset_uuid}",
                 headers=self.token_headers,
             )
         except Exception as e:
@@ -124,7 +124,7 @@ class DataSetWebClient:
     def put_dataset_config(self, dataset_uuid, payload):
         try:
             r = requests.put(
-                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets/{dataset_uuid}",
+                f"{self.afs_url}/instances/{self.instance_id}/datasets/{dataset_uuid}",
                 json=payload,
                 headers=self.token_headers,
             )
@@ -135,7 +135,7 @@ class DataSetWebClient:
     def post_dataset_bucket(self, payload):
         try:
             r = requests.post(
-                f"{self.afs_url}/v2/instances/{self.instance_id}/datasets",
+                f"{self.afs_url}/instances/{self.instance_id}/datasets",
                 json=payload,
                 headers=self.token_headers,
             )
@@ -164,6 +164,83 @@ class EnsaasMongoDB:
         )
         self.DATABASE = mongoClient[current_app.config["MONGODB_DATABASE"]]
 
+
+class AzureBlob:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, AZURE_STORAGE_CONNECTION):
+        print("[___________________________ CONNECT AZUREBLOB ___________________________]")
+        try:
+            print("Azure Blob Storage v" + __version__ + " - connect success .")
+            print(AZURE_STORAGE_CONNECTION)
+            self.blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION)
+        except Exception as e:
+            print('Exception:', e)
+
+    def ListContainer(self):
+        containerArray = []
+        container_list = self.blob_service_client.list_containers()
+        for container in container_list:
+            containerArray.append(container.name)
+        return (containerArray)
+
+    def ListBlob(self, container_name):
+        try:
+            blobArray = []
+            container_client = self.blob_service_client.get_container_client(container_name)
+            blob_list = container_client.list_blobs()
+            for blob in blob_list:
+                blobArray.append(blob.name)
+            return (blobArray)
+        except Exception as e:
+            return ('Exception:' + str(e))
+
+    def CreateContainer(self, container_name):
+        try:
+            container_client = self.blob_service_client.create_container(container_name)
+            return ('Success CreateContainer :' + container_name)
+        except Exception as e:
+            return ('Exception:' + str(e))
+
+    def DeleteContainer(self, container_name):
+        try:
+            container_client = self.blob_service_client.delete_container(container_name)
+            return ('Success DeleteContainer :' + container_name)
+        except Exception as e:
+            return ('Exception:' + str(e))
+
+    def UploadFile(self, container_name, local_path, local_file_name):
+        try:
+            upload_file_path = os.path.join(local_path, local_file_name)
+            blob_client = self.blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
+            with open(upload_file_path, "rb") as data:
+                blob_client.upload_blob(data)
+            return ('Success UploadFile: ' + local_file_name)
+        except Exception as e:
+            return ('Exception:' + str(e))
+
+    def DownloadFile(self, container_name, file_name):
+        try:
+            blob_client = self.blob_service_client.get_blob_client(container=container_name, blob=file_name)
+            with open(file_name, "wb") as my_blob:
+                blob_data = blob_client.download_blob()
+                blob_data.readinto(my_blob)
+            return ('Success DownloadFile: ' + file_name)
+        except Exception as e:
+            return ('Exception:' + str(e))
+
+    def DeleteFile(self, container_name, file_name):
+        try:
+            blob_client = self.blob_service_client.get_blob_client(container=container_name, blob=file_name)
+            blob_client.delete_blob()
+            return ('Success DeleteFile: ' + file_name)
+        except Exception as e:
+            return ('Exception:' + str(e))
 
 # class EKS009MongoDB:
 #     def __init__(self):
