@@ -2,6 +2,7 @@ import logging
 import os
 import json
 import requests
+from flask import jsonify
 
 
 class Config:
@@ -11,24 +12,24 @@ class Config:
     IFP_DESK_PASSWORD = os.getenv("IFP_DESK_PASSWORD")
     IFP_DESK_API_URL = os.getenv("IFP_DESK_API_URL")
     SCHEDULER_API_ENABLED = True
-    try:
-        r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
-    except:
-        print("Can not get environment response.")
-    if r.status_code == 200:
-        res_env = json.loads(r.text)
-        INSTANCE_ID = res_env.get("AFS_INSTANCESID")
-        AZURE_STORAGE_CONNECTION = res_env.get("AZURE_STORAGE_CONNECTION")
-        AZURE_STORAGE_ACCOUNT_NAME = res_env.get("AZURE_STORAGE_ACCOUNT_NAME")
-        AZURE_STORAGE_ACCOUNT_KEY = res_env.get("AZURE_STORAGE_ACCOUNT_KEY")
-        SSO_TOKEN = "Bearer " + res_env.get("Authorization")
-        AFS_URL = res_env.get("AFS_API_URL")
-        IFP_DESK_CLIENT_SECRET = res_env.get("IFP_DESK_CLIENT_SECRET")
-    else:
-        AFS_URL = os.getenv("AFS_DEVELOPMENT_SERVICE_API_URL")
-        INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
-        # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
-        SSO_TOKEN = json.loads(r.text).get("Authorization")
+    # try:
+    #     r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
+    # except:
+    #     print("Can not get environment response.")
+    # if r.status_code == 200:
+    #     res_env = json.loads(r.text)
+    #     INSTANCE_ID = res_env.get("AFS_INSTANCESID")
+    #     AZURE_STORAGE_CONNECTION = res_env.get("AZURE_STORAGE_CONNECTION")
+    #     AZURE_STORAGE_ACCOUNT_NAME = res_env.get("AZURE_STORAGE_ACCOUNT_NAME")
+    #     AZURE_STORAGE_ACCOUNT_KEY = res_env.get("AZURE_STORAGE_ACCOUNT_KEY")
+    #     SSO_TOKEN = "Bearer " + res_env.get("Authorization")
+    #     AFS_URL = res_env.get("AFS_API_URL")
+    #     IFP_DESK_CLIENT_SECRET = res_env.get("IFP_DESK_CLIENT_SECRET")
+    # else:
+    #     AFS_URL = os.getenv("AFS_DEVELOPMENT_SERVICE_API_URL")
+    #     INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
+    #     # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
+    #     SSO_TOKEN = json.loads(r.text).get("Authorization")
     if os.getenv("ENSAAS_SERVICES") is not None:
         ENSAAS_SERVICES = json.loads(os.getenv("ENSAAS_SERVICES"))
         MONGODB_URL = ENSAAS_SERVICES["mongodb"][0]["credentials"]["externalHosts"]
@@ -88,6 +89,29 @@ class Config:
     @staticmethod
     def init_app(app):
         pass
+
+    @staticmethod
+    def get_env_res(key):
+        try:
+            r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
+        except:
+            print("Can not get environment response.")
+        if r.status_code == 200:
+            res_env = json.loads(r.text)
+            if key == "Authorization":
+                return "Bearer " + res_env.get("Authorization")
+            return res_env.get(key)
+        else:
+            return (
+                jsonify(
+                    {"message": "Can not get environment response."},
+                ),
+                404,
+            )
+        # AFS_URL = os.getenv("AFS_DEVELOPMENT_SERVICE_API_URL")
+        # INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
+        # # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
+        # SSO_TOKEN = json.loads(r.text).get("Authorization")
 
 
 class DevelopmentConfig(Config):

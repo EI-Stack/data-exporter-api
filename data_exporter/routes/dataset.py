@@ -4,12 +4,13 @@ from flask import Blueprint, request, current_app, jsonify
 
 from data_exporter import mqtt
 from data_exporter.utils.mqtt_topic import MqttTopicHandler
+from data_exporter.config import Config
 from io import BytesIO
 import json
 from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
     split_datetime,
-    set_s3_dataset,
+    set_blob_dataset,
     concat_split_datetime_dataset,
 )
 from data_exporter.utils.csv_value_helper import (
@@ -54,7 +55,7 @@ mqtt.client.on_message = handle_mqtt_message
 # mqtt.client.loop_forever()
 # mqtt.client.loop()
 
-s3_bucket_name = current_app.config["S3_BUCKET_NAME"]
+blob_bucket_name = current_app.config["S3_BUCKET_NAME"]
 
 
 @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
@@ -71,7 +72,7 @@ def get_dataset_file(parameter_id):
     date_list = split_datetime(start, end)
     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
     if normalized_all.empty:
-        return {"data": {"bucket": s3_bucket_name}}
+        return {"data": {"bucket": blob_bucket_name}}
     target = check_target(normalized_all)
     normalized_df = complement_csv_value(normalized_all, target)
     if not check_data_count(normalized_df):
@@ -85,21 +86,21 @@ def get_dataset_file(parameter_id):
     normalized_df.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
     csv_bytes = normalized_df.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
-    azure_blob = AzureBlob(current_app.config["AZURE_STORAGE_CONNECTION"])
-    azure_blob.UploadFile(s3_bucket_name, "./csv_file", f"{file_name}.csv")
+    azure_blob = AzureBlob(Config.get_env_res("AZURE_STORAGE_CONNECTION"))
+    azure_blob.UploadFile(blob_bucket_name, "./csv_file", f"{file_name}.csv")
     res = dataset_web_client.get_dataset_information()
     data = json.loads(res.text)
     exist = False
     dataset_id = ""
     if not data.get("resources"):
-        return {"data": {"bucket": s3_bucket_name}}
+        return {"data": {"bucket": blob_bucket_name}}
     for item in data.get("resources"):
         if item.get("name") == data_set_name:
             dataset_id = item.get("uuid")
             f = dataset_web_client.get_dataset_config(item.get("uuid"))
             payload = json.loads(f.text)
             for data in payload.get("firehose").get("data").get("buckets"):
-                if data.get("bucket") == s3_bucket_name:
+                if data.get("bucket") == blob_bucket_name:
                     files = data.get("blobs").get("files")
                     files.append(f"{file_name}.csv")
             # put file
@@ -109,10 +110,10 @@ def get_dataset_file(parameter_id):
             exist = True
             break
     if not exist:
-        dataset_id = set_s3_dataset(data_set_name, file_name, s3_bucket_name)
+        dataset_id = set_blob_dataset(data_set_name, file_name, blob_bucket_name)
     data_dict = {
         "data": {
-            "bucket": s3_bucket_name,
+            "bucket": blob_bucket_name,
             "file": f"{file_name}.csv",
             "dataset_id": dataset_id,
             "target_col": target,

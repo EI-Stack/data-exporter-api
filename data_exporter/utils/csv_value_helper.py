@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from flask import current_app
 
 from data_exporter import scheduler
+from data_exporter.config import Config
 from data_exporter.utils.web_client import AzureBlob
 
 SPLIT_TIME = 15
@@ -72,7 +73,7 @@ def check_target(df):
 def clean_csv():
     with scheduler.app.app_context():
         now = datetime.utcnow()
-        azure_blob = AzureBlob(current_app.config["AZURE_STORAGE_CONNECTION"])
+        azure_blob = AzureBlob(Config.get_env_res("AZURE_STORAGE_CONNECTION"))
         generator = azure_blob.blob_service_client.get_container_client(
             current_app.config["S3_BUCKET_NAME"]
         )

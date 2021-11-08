@@ -8,6 +8,7 @@ import numpy as np
 from flask import current_app
 
 from data_exporter import scheduler
+from data_exporter.config import Config
 from data_exporter.utils.csv_value_helper import check_target, complement_csv_value
 from data_exporter.utils.web_client import (
     DataSetWebClient,
@@ -54,28 +55,50 @@ def split_datetime(start, end):
     return result
 
 
-def set_s3_dataset(data_set_name, file_name, s3_bucket_name):
+def set_blob_dataset(data_set_name, file_name, blob_bucket_name):
+    # payload = {
+    #     "name": data_set_name,
+    #     "firehose": {
+    #         "type": "s3-firehose",
+    #         "data": {
+    #             "dbType": "external",
+    #             "serviceName": "",
+    #             "serviceKey": "",
+    #             "endPoint": f"https://{current_app.config['S3_ENDPOINT']}:443",
+    #             "accessKey": current_app.config["S3_ACCESS_KEY"],
+    #             "secretAccessKey": current_app.config["S3_SECRET_KEY"],
+    #             "buckets": [
+    #                 {
+    #                     "blobs": {"files": [f"{file_name}.csv"], "folders": []},
+    #                     "bucket": s3_bucket_name,
+    #                 }
+    #             ],
+    #         },
+    #     },
+    #     "sample_data": "",
+    #     "datasource": "s3-firehose",
+    # }
     payload = {
         "name": data_set_name,
         "firehose": {
-            "type": "s3-firehose",
+            "type": "azure-firehose",
             "data": {
-                "dbType": "external",
-                "serviceName": "",
-                "serviceKey": "",
-                "endPoint": f"https://{current_app.config['S3_ENDPOINT']}:443",
-                "accessKey": current_app.config["S3_ACCESS_KEY"],
-                "secretAccessKey": current_app.config["S3_SECRET_KEY"],
-                "buckets": [
+                "accountName": Config.get_env_res("AZURE_STORAGE_ACCOUNT_NAME"),
+                "accountKey": Config.get_env_res("AZURE_STORAGE_ACCOUNT_KEY"),
+                "containers": [
                     {
+                        "container": blob_bucket_name,
                         "blobs": {"files": [f"{file_name}.csv"], "folders": []},
-                        "bucket": s3_bucket_name,
                     }
                 ],
+                "credential": {
+                    "accountName": Config.get_env_res("AZURE_STORAGE_ACCOUNT_NAME"),
+                    "accountKey": Config.get_env_res("AZURE_STORAGE_ACCOUNT_KEY"),
+                },
             },
         },
         "sample_data": "",
-        "datasource": "s3-firehose",
+        "datasource": "azure-firehose",
     }
     r = DataSetWebClient().post_dataset_bucket(payload=payload)
     dataset_id = json.loads(r.text).get("uuid")

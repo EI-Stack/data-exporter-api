@@ -8,6 +8,8 @@ from azure.storage.blob import BlobServiceClient, __version__
 from mongo_proxy import MongoProxy
 from pymongo import MongoClient
 
+from data_exporter.config import Config
+
 query_with_date = """
     query parameter($id: ID! $from: DateTime!, $to: DateTime!) {
     parameter(id: $id){
@@ -51,13 +53,13 @@ class DataSetWebClient:
 
     def __init__(self):
         self.token_headers = {
-            "Authorization": current_app.config["SSO_TOKEN"],
+            "Authorization": Config.get_env_res("Authorization"),
             "accept": "application/json",
             "content-type": "application/json",
         }
-        self.afs_url = current_app.config["AFS_URL"]
+        self.afs_url = Config.get_env_res("AFS_API_URL")
         self.eks_url = current_app.config["IFP_DESK_API_URL"]
-        self.instance_id = current_app.config["INSTANCE_ID"]
+        self.instance_id = Config.get_env_res("AFS_INSTANCESID")
         self.ifp_headers = {
             "X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]
         }
