@@ -99,8 +99,8 @@ def get_dataset_file(parameter_id):
             dataset_id = item.get("uuid")
             f = dataset_web_client.get_dataset_config(item.get("uuid"))
             payload = json.loads(f.text)
-            for data in payload.get("firehose").get("data").get("buckets"):
-                if data.get("bucket") == blob_bucket_name:
+            for data in payload.get("firehose").get("data").get("containers"):
+                if data.get("container") == blob_bucket_name:
                     files = data.get("blobs").get("files")
                     files.append(f"{file_name}.csv")
             # put file
