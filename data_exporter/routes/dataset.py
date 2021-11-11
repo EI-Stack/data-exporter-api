@@ -17,8 +17,10 @@ from data_exporter.utils.csv_value_helper import (
     complement_csv_value,
     check_data_count,
     check_target,
+    complement_dataset_value,
 )
-from data_exporter.utils.web_client import DataSetWebClient, AzureBlob
+from data_exporter.utils.web_client import DataSetWebClient, AzureBlob, EnsaasMongoDB
+import pandas as pd
 
 # print(mqtt.broker_url)
 dataset_bp = Blueprint("dataset_bp", __name__)
@@ -58,36 +60,57 @@ mqtt.client.on_message = handle_mqtt_message
 blob_bucket_name = current_app.config["S3_BUCKET_NAME"]
 
 
-@dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
-def get_dataset_file(parameter_id):
-    if not parameter_id:
-        raise ValueError("Can not Find parameter_id")
-    dataset_web_client = DataSetWebClient()
-    # parameter_id = transfer_to_big_parameter_id(parameter_id)
+@dataset_bp.route("/dataset/<task_name>", methods=["GET"])
+def get_dataset_file(task_name):
+    if not task_name:
+        raise ValueError("Can not Find task_name")
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
-    end = datetime.utcnow()
-    start = end - timedelta(days=100)
-    date_list = split_datetime(start, end)
-    normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
-    if normalized_all.empty:
-        return {"data": {"bucket": blob_bucket_name}}
-    target = check_target(normalized_all)
-    normalized_df = complement_csv_value(normalized_all, target)
-    if not check_data_count(normalized_df):
+    mongo = EnsaasMongoDB()
+    mongo_db = mongo.DATABASE["iii.pml.task"]
+    if not mongo_db:
         return (
             jsonify(
-                {"message": "Dataset is less than one month"},
+                {"message": "Can not Find collection named 'iii.pml.task'"},
             ),
             406,
         )
-    file_name = parameter_id + "." + str(uuid4())[-9:-1]
-    normalized_df.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
-    csv_bytes = normalized_df.to_csv().encode("utf-8")
+    end = datetime.utcnow()
+    start = end - timedelta(days=100)
+    cursor = mongo_db.find({"TaskName": task_name})
+    data_list = list(cursor)
+    df_all = pd.DataFrame()
+    print(len(data_list))
+    for data in data_list:
+        print(data.get('ParameterID'))
+        if data.get('UsageType') == 'EnergyDemand':
+            collection = "ifp.core.kw_real_time"
+        elif data.get('UsageType') == 'EnergyConsumption':
+            collection = "ifp.core.kwh_real_time"
+        else:
+            return (
+                jsonify(
+                    {"message": "Data is not found in 'UsageType'"},
+                ),
+                404,
+            )
+        mongo_db = mongo.DATABASE[collection]
+        cursor = mongo_db.find({"parameterNodeId": data.get("ParameterID"), 'logTime': {'$gte': start, '$lt': end}})
+        data = list(cursor)
+        df = pd.DataFrame(data)
+        # normalized_df = complement_dataset_value(df,target)
+        print('-'*30)
+        df_all = pd.concat([df_all, df], ignore_index=True)
+    print(df_all)
+    target = check_target(df_all)
+    file_name = task_name + "." + str(uuid4())[-9:-1]
+    df_all.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
+    csv_bytes = df_all.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     azure_blob = AzureBlob(Config.get_env_res("AZURE_STORAGE_CONNECTION"))
     azure_blob.UploadFile(blob_bucket_name, "./csv_file", f"{file_name}.csv")
+    dataset_web_client = DataSetWebClient()
     res = dataset_web_client.get_dataset_information()
     data = json.loads(res.text)
     exist = False
@@ -121,3 +144,67 @@ def get_dataset_file(parameter_id):
         }
     }
     return data_dict
+
+# @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
+# def get_dataset_file(parameter_id):
+#     if not parameter_id:
+#         raise ValueError("Can not Find parameter_id")
+#     dataset_web_client = DataSetWebClient()
+#     # parameter_id = transfer_to_big_parameter_id(parameter_id)
+#     data_set_name = request.args.get("dataset_name")
+#     if not data_set_name:
+#         raise ValueError("Can not Find dataset_name with parameter")
+#     end = datetime.utcnow()
+#     start = end - timedelta(days=100)
+#     date_list = split_datetime(start, end)
+#     normalized_all = concat_split_datetime_dataset(date_list, parameter_id)
+#     if normalized_all.empty:
+#         return {"data": {"bucket": blob_bucket_name}}
+#     target = check_target(normalized_all)
+#     normalized_df = complement_csv_value(normalized_all, target)
+#     if not check_data_count(normalized_df):
+#         return (
+#             jsonify(
+#                 {"message": "Dataset is less than one month"},
+#             ),
+#             406,
+#         )
+#     file_name = parameter_id + "." + str(uuid4())[-9:-1]
+#     normalized_df.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
+#     csv_bytes = normalized_df.to_csv().encode("utf-8")
+#     csv_buffer = BytesIO(csv_bytes)
+#     azure_blob = AzureBlob(Config.get_env_res("AZURE_STORAGE_CONNECTION"))
+#     azure_blob.UploadFile(blob_bucket_name, "./csv_file", f"{file_name}.csv")
+#     res = dataset_web_client.get_dataset_information()
+#     data = json.loads(res.text)
+#     exist = False
+#     dataset_id = ""
+#     if not data.get("resources"):
+#         return {"data": {"bucket": blob_bucket_name}}
+#     for item in data.get("resources"):
+#         if item.get("name") == data_set_name:
+#             dataset_id = item.get("uuid")
+#             f = dataset_web_client.get_dataset_config(item.get("uuid"))
+#             payload = json.loads(f.text)
+#             for data in payload.get("firehose").get("data").get("containers"):
+#                 if data.get("container") == blob_bucket_name:
+#                     files = data.get("blobs").get("files")
+#                     files.append(f"{file_name}.csv")
+#             # put file
+#             dataset_web_client.put_dataset_config(
+#                 dataset_uuid=item.get("uuid"), payload=payload
+#             )
+#             exist = True
+#             break
+#     if not exist:
+#         dataset_id = set_blob_dataset(data_set_name, file_name, blob_bucket_name)
+#     data_dict = {
+#         "data": {
+#             "bucket": blob_bucket_name,
+#             "file": f"{file_name}.csv",
+#             "dataset_id": dataset_id,
+#             "target_col": target,
+#             "index_col": "logTime"
+#         }
+#     }
+#     return data_dict

@@ -50,6 +50,24 @@ def complement_csv_value(df, target):
     return new_df
 
 
+def complement_dataset_value(df, target):
+    # df["time"] = df["logTime"].apply(delete_seconds)
+    df = df.set_index("logTime")
+    if "num" == target:
+        new_df = df.num.resample(rule="15T").mean()
+    else:
+        new_df = df.value.resample(rule="15T").mean()
+    new_df = new_df.reset_index()
+    new_df.fillna(method="pad", axis=0, inplace=True)
+    # new_df.insert(
+    #     2, "savedAt", new_df["time"].apply(lambda d: int(datetime.timestamp(d) * 1000))
+    # )
+    new_df["logTime"] = new_df["logTime"].apply(
+        lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    )
+    return new_df
+
+
 def check_data_count(normalized_df):
     if datetime.fromtimestamp(
         normalized_df.tail(1)["savedAt"] / 1000

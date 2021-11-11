@@ -107,6 +107,8 @@ def set_blob_dataset(data_set_name, file_name, blob_bucket_name):
 
 def get_normalized_all(variables):
     r = DataSetWebClient().get_dataset_with_graphql_by_date(variables)
+    if json.loads(r.text).get("errors"):
+        return
     data = pd.read_json(r.text)["data"]["parameter"]
     normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
     return normalized
@@ -162,46 +164,62 @@ def spc_routine():
         SpcData.objects.insert(spc_data_list)
 
 
+""" calc metrics func """
+
+
 def evaluate_metrics(true, predicted):
     mae = metrics.mean_absolute_error(true, predicted)
     mse = metrics.mean_squared_error(true, predicted)
     rmse = np.sqrt(metrics.mean_squared_error(true, predicted))
-    mean_observed_data = sum(true) / len(predicted)
-    ss_tot = sum([(y - mean_observed_data) ** 2 for y in true])
-    ss_res = sum([(y - y_hat) ** 2 for y, y_hat in zip(true, predicted)])
-    div = ss_res / ss_tot
-    r2 = 1 - div
-    acc = r2 * 100
+    r2 = metrics.r2_score(true, predicted)
+    true_range = np.percentile(true, 90) - np.percentile(true, 10)
+    acc = (1 - rmse / true_range) * 100  # rmse_accuracy
+    print("__________________________________")
+    print("MAE:", mae)
+    print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("R2:", r2)
+    print("ACC:", acc)
     return mae, mse, rmse, r2, acc
 
 
 def predict_data_metric():
     with scheduler.app.app_context():
         ensaas = EnsaasMongoDB()
+        task_group = ensaas.DATABASE["iii.pml.taskgroup"]
+        if not task_group:
+            raise logging.info(task_group)
         ensaas_db = ensaas.DATABASE["iii.pml.task"]
         if not ensaas_db:
             raise logging.info(ensaas_db)
-        cursor = ensaas_db.find({})
-        eks009 = EnsaasMongoDB()
-        eks009_db = eks009.DATABASE
-        for data in cursor:
-            kwh = eks009_db["ifp.core.kwh_real_time"].find(
-                {"parameterNodeId": data.get("ParameterID")}
-            )
-            kwh_p = eks009_db["ifp.core.kwh_real_time_p"].find(
-                {"parameterNodeId": data.get("TaskID")}
-            )
-            kwh_df = pd.DataFrame(list(kwh))
-            kwh_p_df = pd.DataFrame(list(kwh_p))
-            if not kwh_df.empty and not kwh_p_df.empty:
-                df_all = pd.merge(kwh_df, kwh_p_df, on="logTime")
+        group = task_group.find({})
+        for data in group:
+            task_name = data.get("TaskName")
+            print('task_name', task_name)
+            task = ensaas_db.find({"TaskName": task_name})
+            print(task)
+            kwh_df_all = pd.DataFrame()
+            kwh_p_df_all = pd.DataFrame()
+            for info in task:
+                kwh = ensaas.DATABASE["ifp.core.kwh_real_time"].find(
+                    {"parameterNodeId": info.get("ParameterID")}
+                )
+                kwh_p = ensaas.DATABASE["ifp.core.kwh_real_time_p"].find(
+                    {"parameterNodeId": info.get("TaskID")}
+                )
+                kwh_df = pd.DataFrame(list(kwh))
+                kwh_p_df = pd.DataFrame(list(kwh_p))
+                kwh_df_all = pd.concat([kwh_df_all, kwh_df], ignore_index=True)
+                kwh_p_df_all = pd.concat([kwh_p_df_all, kwh_p_df], ignore_index=True)
+            if not kwh_df_all.empty and not kwh_p_df_all.empty:
+                df_all = pd.merge(kwh_df_all, kwh_p_df_all, on="logTime")
                 mae, mse, rmse, r2, acc = evaluate_metrics(
                     df_all["value_x"].tolist(), df_all["value_y"].tolist()
                 )
                 metric = {"mae": mae, "mse": mse, "rmse": rmse, "r2": r2, "acc": acc}
-                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID"))
-                ensaas_db.update(
-                    {"ParameterID": data.get("ParameterID")},
+                logging.info("[UPDATE III_PML_GROUP]: " + data.get("TaskName"))
+                task_group.update(
+                    {"TaskName": data.get("TaskName")},
                     {"$set": {"Metrics": metric}},
                 )
             else:
@@ -212,8 +230,9 @@ def predict_data_metric():
                     "r2": None,
                     "acc": None,
                 }
-                ensaas_db.update(
-                    {"ParameterID": data.get("ParameterID")},
+                task_group.update(
+                    {"TaskName": data.get("TaskName")},
                     {"$set": {"Metrics": metric}},
                 )
-                logging.info("[UPDATE III_PML_TASK]: " + data.get("ParameterID"))
+                logging.info("[UPDATE III_PML_GROUP]: " + data.get("TaskName"))
+            print('-'*30)
