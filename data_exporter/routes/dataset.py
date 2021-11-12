@@ -122,6 +122,13 @@ def get_dataset_file(task_name):
             dataset_id = item.get("uuid")
             f = dataset_web_client.get_dataset_config(item.get("uuid"))
             payload = json.loads(f.text)
+            if not payload.get("firehose").get("data").get("containers"):
+                return (
+                    jsonify(
+                        {"message": "Wrong bucket is about 'Blob'"},
+                    ),
+                    404,
+                )
             for data in payload.get("firehose").get("data").get("containers"):
                 if data.get("container") == blob_bucket_name:
                     files = data.get("blobs").get("files")
