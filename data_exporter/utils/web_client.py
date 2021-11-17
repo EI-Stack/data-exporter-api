@@ -221,7 +221,7 @@ class AzureBlob:
             upload_file_path = os.path.join(local_path, local_file_name)
             blob_client = self.blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
             with open(upload_file_path, "rb") as data:
-                blob_client.upload_blob(data)
+                blob_client.upload_blob(data, max_concurrency=30, timeout=72000)
             return ('Success UploadFile: ' + local_file_name)
         except Exception as e:
             return ('Exception:' + str(e))

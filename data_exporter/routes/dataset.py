@@ -76,12 +76,12 @@ def get_dataset_file(task_name):
             ),
             406,
         )
+    azure_conn = Config.get_env_res("AZURE_STORAGE_CONNECTION")
     end = datetime.utcnow()
     start = end - timedelta(days=100)
     cursor = mongo_db.find({"TaskName": task_name})
     data_list = list(cursor)
     df_all = pd.DataFrame()
-    print(len(data_list))
     for data in data_list:
         print(data.get('ParameterID'))
         if data.get('UsageType') == 'EnergyDemand':
@@ -108,7 +108,7 @@ def get_dataset_file(task_name):
     df_all.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
     csv_bytes = df_all.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
-    azure_blob = AzureBlob(Config.get_env_res("AZURE_STORAGE_CONNECTION"))
+    azure_blob = AzureBlob(azure_conn)
     azure_blob.UploadFile(blob_bucket_name, "./csv_file", f"{file_name}.csv")
     dataset_web_client = DataSetWebClient()
     res = dataset_web_client.get_dataset_information()

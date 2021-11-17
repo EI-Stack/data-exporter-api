@@ -2,7 +2,7 @@ import logging
 import os
 import json
 import requests
-from flask import jsonify
+from flask import jsonify, abort, Response, make_response
 
 
 class Config:
@@ -94,20 +94,19 @@ class Config:
     def get_env_res(key):
         try:
             r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
-        except:
-            print("Can not get environment response.")
-        if r.status_code == 200:
-            res_env = json.loads(r.text)
-            if key == "Authorization":
-                return "Bearer " + res_env.get("Authorization")
-            return res_env.get(key)
-        else:
-            return (
-                jsonify(
-                    {"message": "Can not get environment response."},
-                ),
-                404,
-            )
+            if r.status_code == 200:
+                res_env = json.loads(r.text)
+                if key == "Authorization":
+                    return "Bearer " + res_env.get("Authorization")
+                return res_env.get(key)
+            else:
+                status = r.status_code
+                text = json.loads(r.text)
+                abort(make_response(jsonify(text), status))
+        except requests.exceptions.HTTPError as e:
+            # Whoops it wasn't a 200
+            return "Error: " + str(e)
+
         # AFS_URL = os.getenv("AFS_DEVELOPMENT_SERVICE_API_URL")
         # INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
         # # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
