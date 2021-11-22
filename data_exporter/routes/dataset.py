@@ -58,7 +58,7 @@ mqtt.client.on_message = handle_mqtt_message
 # mqtt.client.loop()
 
 blob_bucket_name = current_app.config["S3_BUCKET_NAME"]
-
+DATA_LENGTH = 2880
 
 @dataset_bp.route("/dataset/<task_name>", methods=["GET"])
 def get_dataset_file(task_name):
@@ -98,6 +98,9 @@ def get_dataset_file(task_name):
         mongo_db = mongo.DATABASE[collection]
         cursor = mongo_db.find({"parameterNodeId": data.get("ParameterID"), 'logTime': {'$gte': start, '$lt': end}})
         data = list(cursor)
+        print(len(data))
+        if len(data) < DATA_LENGTH:
+            continue
         df = pd.DataFrame(data)
         # normalized_df = complement_dataset_value(df,target)
         print('-'*30)
@@ -110,6 +113,13 @@ def get_dataset_file(task_name):
     csv_buffer = BytesIO(csv_bytes)
     azure_blob = AzureBlob(azure_conn)
     azure_blob.UploadFile(blob_bucket_name, "./csv_file", f"{file_name}.csv")
+    if f'{file_name}.csv' not in azure_blob.ListBlob(blob_bucket_name):
+        return (
+            jsonify(
+                {"message": "The file is not in Azure Blob ."},
+            ),
+            404,
+        )
     dataset_web_client = DataSetWebClient()
     res = dataset_web_client.get_dataset_information()
     data = json.loads(res.text)
