@@ -12,60 +12,81 @@ class Config:
     IFP_DESK_PASSWORD = os.getenv("IFP_DESK_PASSWORD")
     IFP_DESK_API_URL = os.getenv("IFP_DESK_API_URL")
     SCHEDULER_API_ENABLED = True
-    # try:
-    #     r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL") + "/api/v1/auth/me")
-    # except:
-    #     print("Can not get environment response.")
-    # if r.status_code == 200:
-    #     res_env = json.loads(r.text)
-    #     INSTANCE_ID = res_env.get("AFS_INSTANCESID")
-    #     AZURE_STORAGE_CONNECTION = res_env.get("AZURE_STORAGE_CONNECTION")
-    #     AZURE_STORAGE_ACCOUNT_NAME = res_env.get("AZURE_STORAGE_ACCOUNT_NAME")
-    #     AZURE_STORAGE_ACCOUNT_KEY = res_env.get("AZURE_STORAGE_ACCOUNT_KEY")
-    #     SSO_TOKEN = "Bearer " + res_env.get("Authorization")
-    #     AFS_URL = res_env.get("AFS_API_URL")
-    #     IFP_DESK_CLIENT_SECRET = res_env.get("IFP_DESK_CLIENT_SECRET")
-    # else:
-    #     AFS_URL = os.getenv("AFS_DEVELOPMENT_SERVICE_API_URL")
-    #     INSTANCE_ID = os.getenv("INSTANCE_ID", "2174f980-0fc1-5b88-913b-2db9c1deccc5")
-    #     # r = requests.get(os.getenv("IFPS_PREDICT_RETRAIN_API_URL" + "/api/v1/token"))
-    #     SSO_TOKEN = json.loads(r.text).get("Authorization")
-    if os.getenv("ENSAAS_SERVICES") is not None:
-        ENSAAS_SERVICES = json.loads(os.getenv("ENSAAS_SERVICES"))
-        MONGODB_URL = ENSAAS_SERVICES["mongodb"][0]["credentials"]["externalHosts"]
-        MONGODB_USERNAME = ENSAAS_SERVICES["mongodb"][0]["credentials"]["username"]
-        MONGODB_PASSWORD = ENSAAS_SERVICES["mongodb"][0]["credentials"]["password"]
-        MONGODB_DATABASE = ENSAAS_SERVICES["mongodb"][0]["credentials"]["database"]
-        MONGODB_AUTH_SOURCE = MONGODB_DATABASE
-        if not res_env.get("IFP_DESK_CLIENT_SECRET"):
-            IFP_DESK_CLIENT_SECRET = os.getenv('IFP_DESK_CLIENT_SECRET')
-    else:
-        MONGODB_URL = os.getenv("MONGODB_URL")
-        MONGODB_USERNAME = os.getenv("MONGODB_USERNAME")
-        MONGODB_DATABASE = os.getenv("MONGODB_DATABASE")
-        MONGODB_AUTH_SOURCE = os.getenv("MONGODB_AUTH_SOURCE")
-        MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD")
-        MONGODB_PASSWORD_FILE = os.getenv('MONGODB_PASSWORD_FILE')
-        if not res_env.get("IFP_DESK_CLIENT_SECRET"):
-            IFP_DESK_CLIENT_SECRET = os.getenv('IFP_DESK_CLIENT_SECRET')
+    IFP_DESK_CLIENT_SECRET = os.environ.get('IFP_DESK_CLIENT_SECRET')
+
+    MONGODB_URL = os.environ.get('MONGODB_URL')
+    MONGODB_USERNAME = os.environ.get('MONGODB_USERNAME')
+    MONGODB_DATABASE = os.environ.get('MONGODB_DATABASE')
+    MONGODB_AUTH_SOURCE = os.environ.get('MONGODB_AUTH_SOURCE')
+    MONGODB_PASSWORD = os.environ.get('MONGODB_PASSWORD')
+    MONGODB_PASSWORD_FILE = os.environ.get('MONGODB_PASSWORD_FILE')
+    MONGODB_AUTHMECHANISM = os.environ.get('MONGODB_AUTHMECHANISM', "SCRAM-SHA-1")
+
+    POSTGRES_URL = os.environ.get('POSTGRES_URL')
+    POSTGRES_USERNAME = os.environ.get('POSTGRES_USERNAME')
+    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD')
+    POSTGRES_DATABASE = os.environ.get('POSTGRES_DATABASE')
+    POSTGRES_PASSWORD_FILE = os.environ.get('POSTGRES_PASSWORD_FILE')
+
+    REDIS_URL = os.environ.get('REDIS_URL')
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+    REDIS_PASSWORD_FILE = os.environ.get('REDIS_PASSWORD_FILE')
+    REDIS_DATABASE = os.environ.get('REDIS_DATABASE', "ifp_redis")
+
+    CLUSTER = os.environ.get('cluster')
+    NAMESPACE = os.environ.get('namespace')
+    EXTERNAL = os.environ.get('external')
+    WORKSPACE = os.environ.get('workspace')
+    INFERENCE_API_URL = os.environ.get('IFPS_PREDICT_INFERENCE_API_URL')
+    RETRAIN_API_URL = os.environ.get('IFPS_PREDICT_RETRAIN_API_URL')
+    """ Clound Database env get """
+    ENSAAS_SERVICES = os.getenv("ENSAAS_SERVICES")
+    if ENSAAS_SERVICES is not None:
+        ENSAAS_SERVICES = json.loads(ENSAAS_SERVICES)
+        if 'mongodb' in ENSAAS_SERVICES:
+            MONGODB_URL = ENSAAS_SERVICES['mongodb'][0]['credentials']['externalHosts']
+            MONGODB_USERNAME = ENSAAS_SERVICES['mongodb'][0]['credentials']['username']
+            MONGODB_PASSWORD = ENSAAS_SERVICES['mongodb'][0]['credentials']['password']
+            MONGODB_DATABASE = ENSAAS_SERVICES['mongodb'][0]['credentials']['database']
+            MONGODB_AUTH_SOURCE = MONGODB_DATABASE
+        if 'postgresql' in ENSAAS_SERVICES:
+            POSTGRES_URL = ENSAAS_SERVICES['postgresql'][0]['credentials']['externalHosts']
+            POSTGRES_USERNAME = ENSAAS_SERVICES['postgresql'][0]['credentials']['username']
+            POSTGRES_PASSWORD = ENSAAS_SERVICES['postgresql'][0]['credentials']['password']
+            POSTGRES_DATABASE = ENSAAS_SERVICES['postgresql'][0]['credentials']['database']
+        if 'redis' in ENSAAS_SERVICES:
+            REDIS_HOST = ENSAAS_SERVICES['postgresql'][0]['credentials']['host']
+            REDIS_PORT = str(ENSAAS_SERVICES['postgresql'][0]['credentials']['port'])
+            REDIS_URL = REDIS_HOST + ":" + REDIS_PORT
+            REDIS_PASSWORD = ENSAAS_SERVICES['postgresql'][0]['credentials']['password']
+
+    """ Local password file get """
+    if MONGODB_PASSWORD == None and MONGODB_PASSWORD_FILE is not None:
+        existence = os.path.exists(MONGODB_PASSWORD_FILE)
+        if existence:
+            MONGODB_PASSWORD = open(MONGODB_PASSWORD_FILE).read().rstrip('\n')
+    if POSTGRES_PASSWORD == None and POSTGRES_PASSWORD_FILE is not None:
+        existence = os.path.exists(POSTGRES_PASSWORD_FILE)
+        if existence:
+            POSTGRES_PASSWORD = open(POSTGRES_PASSWORD_FILE).read().rstrip('\n')
+    if REDIS_PASSWORD == None and REDIS_PASSWORD_FILE is not None:
+        existence = os.path.exists(REDIS_PASSWORD_FILE)
+        if existence:
+            REDIS_PASSWORD = open(REDIS_PASSWORD_FILE).read().rstrip('\n')
+    if IFP_DESK_CLIENT_SECRET is not None:
         try:
-            secret_fpath = f'/run/secrets/mongo-root_password'
-            existence = os.path.exists(secret_fpath)
-            if existence:
-                ret = open(secret_fpath).read().rstrip('\n')
-                print("[MONGODB_PASSWORD] -------->   ", ret)
-                MONGODB_PASSWORD = ret
+            IFP_DESK_CLIENT_SECRET = open(IFP_DESK_CLIENT_SECRET).read().rstrip('\n')
         except:
-            print("[MONGODB_PASSWORD_FILE] --------> GET ERROR!!!")
-        try:
-            secret_fpath = f'/run/secrets/ifp-app_secret'
-            existence = os.path.exists(secret_fpath)
-            if existence:
-                ret = open(secret_fpath).read().rstrip('\n')
-                print("[IFP_DESK_CLIENT_SECRET] -------->   ", ret)
-                IFP_DESK_CLIENT_SECRET = ret
-        except:
-            print("[IFP_DESK_CLIENT_SECRET] --------> GET ERROR!!!")
+            IFP_DESK_CLIENT_SECRET = IFP_DESK_CLIENT_SECRET
+        IFP_DESK_HEADERS = {'X-Ifp-App-Secret': IFP_DESK_CLIENT_SECRET}
+
+    """ Clound auto combine URL """
+    if IFP_DESK_API_URL is None and EXTERNAL is not None:
+        IFP_DESK_API_URL = "https://ifp-organizer-" + NAMESPACE + "-" + CLUSTER + "." + EXTERNAL + "/graphql"
+    if INFERENCE_API_URL is None and EXTERNAL is not None:
+        INFERENCE_API_URL = "https://ifps-predict-inference-" + NAMESPACE + "-" + CLUSTER + "." + EXTERNAL
+    if RETRAIN_API_URL is None and EXTERNAL is not None:
+        RETRAIN_API_URL = "https://ifps-predict-train-" + NAMESPACE + "-" + CLUSTER + "." + EXTERNAL
 
     JOBS = [
         {
@@ -74,7 +95,7 @@ class Config:
             "args": None,  # 传入函数的参数
             "trigger": "cron",  # 指定 定时任务的类型
             "day": "*",
-            "hour": "*",
+            "hour": "1",
         },
         {
             "id": "predict_data_metric",  # 一个标识
@@ -82,7 +103,7 @@ class Config:
             "args": None,  # 传入函数的参数
             "trigger": "cron",  # 指定 定时任务的类型
             "day": "*",
-            "hour": "1",
+            "hour": "*",
         },
     ]
 

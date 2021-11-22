@@ -1,12 +1,13 @@
 import logging
 import os
+import json
 from datetime import datetime, timedelta
 
-from flask import current_app
+from flask import current_app, jsonify
 
 from data_exporter import scheduler
 from data_exporter.config import Config
-from data_exporter.utils.web_client import AzureBlob
+from data_exporter.utils.web_client import AzureBlob, DataSetWebClient
 
 SPLIT_TIME = 15
 
@@ -112,35 +113,23 @@ def clean_csv():
                 os.remove(file_name)
                 logging.info("[DELETE_CSV_FILE]:  " + file_name)
 
-        # dataset_web_client = DataSetWebClient()
-        # res = dataset_web_client.get_dataset_information()
-        # data = json.loads(res.text)
-        # exist = False
-        # dataset_id = ""
-        # for item in data.get("resources"):
-        #     if item.get("name") == data_set_name:
-        #         dataset_id = item.get("uuid")
-        #         f = dataset_web_client.get_dataset_config(item.get("uuid"))
-        #         payload = json.loads(f.text)
-        #         if not payload.get("firehose").get("data").get("containers"):
-        #             return (
-        #                 jsonify(
-        #                     {"message": "Wrong bucket is about 'Blob'"},
-        #                 ),
-        #                 404,
-        #             )
-        #         for data in payload.get("firehose").get("data").get("containers"):
-        #             if data.get("container") == blob_bucket_name:
-        #                 files = data.get("blobs").get("files")
-        #                 files.append(f"{file_name}.csv")
-        #         # put file
-        #         dataset_web_client.put_dataset_config(
-        #             dataset_uuid=item.get("uuid"), payload=payload
-        #         )
-        #         exist = True
-        #         break
-        # if not exist:
-        #     dataset_id = set_blob_dataset(data_set_name, file_name, blob_bucket_name)
+                dataset_web_client = DataSetWebClient()
+                res = dataset_web_client.get_dataset_information()
+                data = json.loads(res.text)
+                for item in data.get("resources"):
+                    r = dataset_web_client.get_dataset_config(item.get("uuid"))
+                    payload = json.loads(r.text)
+                    if not payload.get("firehose").get("data").get("containers"):
+                        continue
+                    for data in payload.get("firehose").get("data").get("containers"):
+                        if data.get("container") == current_app.config["S3_BUCKET_NAME"]:
+                            files = data.get("blobs").get("files")
+                            if f in files:
+                                files.remove(f)
+                    # put file
+                    dataset_web_client.put_dataset_config(
+                        dataset_uuid=item.get("uuid"), payload=payload
+                    )
 
 
 

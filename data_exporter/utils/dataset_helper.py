@@ -108,9 +108,10 @@ def set_blob_dataset(data_set_name, file_name, blob_bucket_name):
 def get_normalized_all(variables):
     r = DataSetWebClient().get_dataset_with_graphql_by_date(variables)
     if json.loads(r.text).get("errors"):
-        return
-    data = pd.read_json(r.text)["data"]["parameter"]
-    normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
+        normalized = pd.DataFrame()
+    else:
+        data = pd.read_json(r.text)["data"]["parameter"]
+        normalized = pd.json_normalize(data, "valuesInRange", ["scadaId", "tagId"])
     return normalized
 
 

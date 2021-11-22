@@ -59,7 +59,7 @@ class DataSetWebClient:
         }
         self.afs_url = Config.get_env_res("AFS_API_URL")
         self.eks_url = current_app.config["IFP_DESK_API_URL"]
-        self.instance_id = Config.get_env_res("AFS_INSTANCESID")
+        self.instance_id = Config.get_env_res("AFS_INSTANCES_ID")
         self.ifp_headers = {
             "X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]
         }
