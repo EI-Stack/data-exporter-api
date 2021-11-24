@@ -174,9 +174,8 @@ def evaluate_metrics(true, predicted):
     rmse = np.sqrt(metrics.mean_squared_error(true, predicted))
     r2 = metrics.r2_score(true, predicted)
     true_range = np.percentile(true, 90) - np.percentile(true, 10)
+    true_range = 1 if int(true_range) == 0 else true_range
     acc = (1 - rmse / true_range) * 100  # rmse_accuracy
-    if acc < 0:
-        acc = 0
     print("__________________________________")
     print("MAE:", mae)
     print("MSE:", mse)
