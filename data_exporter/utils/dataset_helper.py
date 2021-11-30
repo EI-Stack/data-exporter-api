@@ -6,6 +6,7 @@ from uuid import uuid4
 import pandas as pd
 import numpy as np
 from flask import current_app
+from pymongo import DESCENDING
 
 from data_exporter import scheduler
 from data_exporter.config import Config
@@ -169,6 +170,8 @@ def spc_routine():
 
 
 def evaluate_metrics(true, predicted):
+    print(true)
+    print(predicted)
     mae = metrics.mean_absolute_error(true, predicted)
     mse = metrics.mean_squared_error(true, predicted)
     rmse = np.sqrt(metrics.mean_squared_error(true, predicted))
@@ -176,6 +179,8 @@ def evaluate_metrics(true, predicted):
     true_range = np.percentile(true, 90) - np.percentile(true, 10)
     true_range = 1 if int(true_range) == 0 else true_range
     acc = (1 - rmse / true_range) * 100  # rmse_accuracy
+    if acc < 0:
+        acc = 0
     print("__________________________________")
     print("MAE:", mae)
     print("MSE:", mse)
@@ -185,7 +190,7 @@ def evaluate_metrics(true, predicted):
     return mae, mse, rmse, r2, acc
 
 
-def predict_data_metric():
+def predict_data_metric(pk_task_name=''):
     with scheduler.app.app_context():
         ensaas = EnsaasMongoDB()
         task_group = ensaas.DATABASE["iii.pml.taskgroup"]
@@ -194,27 +199,40 @@ def predict_data_metric():
         ensaas_db = ensaas.DATABASE["iii.pml.task"]
         if not ensaas_db:
             raise logging.info(ensaas_db)
-        group = task_group.find({})
+        if pk_task_name:
+            group = task_group.find({"TaskName": pk_task_name})
+        else:
+            group = task_group.find({})
+        end = datetime.utcnow()
+        start = end - timedelta(days=7)
         for data in group:
             task_name = data.get("TaskName")
             print('task_name', task_name)
             task = ensaas_db.find({"TaskName": task_name})
-            print(task)
-            kwh_df_all = pd.DataFrame()
-            kwh_p_df_all = pd.DataFrame()
+            real_time_df_all = pd.DataFrame()
+            real_time_p_df_all = pd.DataFrame()
             for info in task:
-                kwh = ensaas.DATABASE["ifp.core.kwh_real_time"].find(
-                    {"parameterNodeId": info.get("ParameterID")}
+                if info.get('UsageType') == 'EnergyDemand':
+                    collection = "ifp.core.kw_real_time"
+                    collection_p = "ifp.core.kw_real_time_p"
+                elif info.get('UsageType') == 'EnergyConsumption':
+                    collection = "ifp.core.kwh_real_time"
+                    collection_p = "ifp.core.kwh_real_time_p"
+                else:
+                    break
+                real_time = ensaas.DATABASE[collection].find(
+                    {"parameterNodeId": info.get("ParameterID"), 'logTime': {'$gte': start, '$lt': end}}
                 )
-                kwh_p = ensaas.DATABASE["ifp.core.kwh_real_time_p"].find(
-                    {"parameterNodeId": info.get("TaskID")}
+                real_time_p = ensaas.DATABASE[collection_p].find(
+                    {"parameterNodeId": info.get("TaskID"), 'logTime': {'$gte': start, '$lt': end}}
                 )
-                kwh_df = pd.DataFrame(list(kwh))
-                kwh_p_df = pd.DataFrame(list(kwh_p))
-                kwh_df_all = pd.concat([kwh_df_all, kwh_df], ignore_index=True)
-                kwh_p_df_all = pd.concat([kwh_p_df_all, kwh_p_df], ignore_index=True)
-            if not kwh_df_all.empty and not kwh_p_df_all.empty:
-                df_all = pd.merge(kwh_df_all, kwh_p_df_all, on="logTime")
+                real_time_df = pd.DataFrame(list(real_time))
+                real_time_p_df = pd.DataFrame(list(real_time_p))
+                real_time_df_all = pd.concat([real_time_df_all, real_time_df], ignore_index=True)
+                real_time_p_df_all = pd.concat([real_time_p_df_all, real_time_p_df], ignore_index=True)
+            if not real_time_df_all.empty and not real_time_p_df_all.empty:
+                df_all = pd.merge(real_time_df_all, real_time_p_df_all, on="logTime")
+                print(df_all[['value_x', 'value_y']])
                 mae, mse, rmse, r2, acc = evaluate_metrics(
                     df_all["value_x"].tolist(), df_all["value_y"].tolist()
                 )
@@ -225,12 +243,24 @@ def predict_data_metric():
                     {"$set": {"Metrics": metric}},
                 )
             else:
+                model_name = data.get("ModelName").replace(" ", "-")
+                model_repo = ensaas.DATABASE["iii.pafs.modelrepomodel"].find({"tags.TaskName": model_name}).sort(
+                    [('createdAt', DESCENDING)]).limit(1)
+                model_cursor = list(model_repo)
+                if not model_cursor:
+                    acc = 60
+                else:
+                    value = model_cursor[0].get('evaluationResult').get('acc')
+                    if value:
+                        acc = value
+                    else:
+                        acc = 60
                 metric = {
                     "mae": None,
                     "mse": None,
                     "rmse": None,
                     "r2": None,
-                    "acc": None,
+                    "acc": acc,
                 }
                 task_group.update(
                     {"TaskName": data.get("TaskName")},

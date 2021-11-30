@@ -11,7 +11,7 @@ from data_exporter.utils.dataset_helper import (
     transfer_to_big_parameter_id,
     split_datetime,
     concat_split_datetime_dataset,
-)
+    predict_data_metric)
 from data_exporter.utils.web_client import EnsaasMongoDB
 
 spc_bp = Blueprint("spc_bp", __name__)
@@ -182,3 +182,11 @@ def get_inference_with_minutes(parameter_id):
     df_array = np.array(df_all[['logTime', target]]).tolist()
     res_dict.update({"data": df_array})
     return res_dict
+
+
+@spc_bp.route("/metrics/<task_name>", methods=["GET"])
+def get_metrics_data(task_name):
+    if not task_name:
+        raise ValueError("Can not Find task_name")
+    predict_data_metric(task_name)
+    return {"task": task_name}
