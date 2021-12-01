@@ -60,6 +60,7 @@ mqtt.client.on_message = handle_mqtt_message
 blob_bucket_name = current_app.config["S3_BUCKET_NAME"]
 DATA_LENGTH = 2880
 
+
 @dataset_bp.route("/dataset/<task_name>", methods=["GET"])
 def get_dataset_file(task_name):
     if not task_name:
@@ -83,10 +84,10 @@ def get_dataset_file(task_name):
     data_list = list(cursor)
     df_all = pd.DataFrame()
     for data in data_list:
-        print(data.get('ParameterID'))
-        if data.get('UsageType') == 'EnergyDemand':
+        print(data.get("ParameterID"))
+        if data.get("UsageType") == "EnergyDemand":
             collection = "ifp.core.kw_real_time"
-        elif data.get('UsageType') == 'EnergyConsumption':
+        elif data.get("UsageType") == "EnergyConsumption":
             collection = "ifp.core.kwh_real_time"
         else:
             return (
@@ -96,24 +97,30 @@ def get_dataset_file(task_name):
                 404,
             )
         mongo_db = mongo.DATABASE[collection]
-        cursor = mongo_db.find({"parameterNodeId": data.get("ParameterID"), 'logTime': {'$gte': start, '$lt': end}})
+        cursor = mongo_db.find(
+            {
+                "parameterNodeId": data.get("ParameterID"),
+                "logTime": {"$gte": start, "$lt": end},
+            }
+        )
         data = list(cursor)
         print(len(data))
         if len(data) < DATA_LENGTH:
             continue
         df = pd.DataFrame(data)
         # normalized_df = complement_dataset_value(df,target)
-        print('-'*30)
+        print("-" * 30)
         df_all = pd.concat([df_all, df], ignore_index=True)
     print(df_all)
     target = check_target(df_all)
     file_name = task_name + "." + str(uuid4())[-9:-1]
+    file_name = file_name.replace(" ", "_")
     df_all.to_csv(f"./csv_file/{file_name}.csv", encoding="utf-8")
     csv_bytes = df_all.to_csv().encode("utf-8")
     csv_buffer = BytesIO(csv_bytes)
     azure_blob = AzureBlob(azure_conn)
     azure_blob.UploadFile(blob_bucket_name, "./csv_file", f"{file_name}.csv")
-    if f'{file_name}.csv' not in azure_blob.ListBlob(blob_bucket_name):
+    if f"{file_name}.csv" not in azure_blob.ListBlob(blob_bucket_name):
         return (
             jsonify(
                 {"message": "The file is not in Azure Blob ."},
@@ -157,10 +164,11 @@ def get_dataset_file(task_name):
             "file": f"{file_name}.csv",
             "dataset_id": dataset_id,
             "target_col": target,
-            "index_col": "logTime"
+            "index_col": "logTime",
         }
     }
     return data_dict
+
 
 # @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
 # def get_dataset_file(parameter_id):
