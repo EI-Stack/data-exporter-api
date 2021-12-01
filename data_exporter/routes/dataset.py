@@ -68,6 +68,7 @@ def get_dataset_file(task_name):
     data_set_name = request.args.get("dataset_name")
     if not data_set_name:
         raise ValueError("Can not Find dataset_name with parameter")
+    data_set_name = data_set_name.replace(" ", "_")
     mongo = EnsaasMongoDB()
     mongo_db = mongo.DATABASE["iii.pml.task"]
     if not mongo_db:
