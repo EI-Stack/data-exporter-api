@@ -243,8 +243,8 @@ def predict_data_metric(pk_task_name=''):
                     {"$set": {"Metrics": metric}},
                 )
             else:
-                model_name = data.get("ModelName").replace(" ", "-")
-                model_repo = ensaas.DATABASE["iii.pafs.modelrepomodel"].find({"tags.TaskName": model_name}).sort(
+                task_name = data.get("TaskName")
+                model_repo = ensaas.DATABASE["iii.pafs.modelrepomodel"].find({"tags.TaskName": task_name}).sort(
                     [('createdAt', DESCENDING)]).limit(1)
                 model_cursor = list(model_repo)
                 if not model_cursor:
