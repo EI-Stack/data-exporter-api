@@ -103,7 +103,7 @@ class Config:
             "args": None,  # 传入函数的参数
             "trigger": "cron",  # 指定 定时任务的类型
             "day": "*",
-            "hour": "*",
+            "hour": "2",
         },
     ]
 
