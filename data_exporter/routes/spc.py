@@ -16,7 +16,7 @@ from data_exporter.utils.web_client import EnsaasMongoDB
 
 spc_bp = Blueprint("spc_bp", __name__)
 
-headers = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
+# headers = {"X-Ifp-App-Secret": "OWFhYThkZWEtOGFjZS0xMWViLTk4MzItMTZmODFiNTM3OTI4"}
 
 
 @spc_bp.route("/spc/date/<parameter_id>", methods=["GET"])

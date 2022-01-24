@@ -4,7 +4,7 @@ import requests
 import json
 from minio import Minio
 from flask import current_app
-from azure.storage.blob import BlobServiceClient, __version__
+from azure.storage.blob import BlobServiceClient, __version__, BlobServiceClient
 from mongo_proxy import MongoProxy
 from pymongo import MongoClient
 
@@ -60,9 +60,7 @@ class DataSetWebClient:
         self.afs_url = Config.get_env_res("AFS_API_URL")
         self.eks_url = current_app.config["IFP_DESK_API_URL"]
         self.instance_id = Config.get_env_res("AFS_INSTANCES_ID")
-        self.ifp_headers = {
-            "X-Ifp-App-Secret": current_app.config["IFP_DESK_CLIENT_SECRET"]
-        }
+        self.ifp_headers = {current_app.config["IFP_DESK_CLIENT_SECRET"]}
 
     @staticmethod
     def get_minio_client(bucket_name):
@@ -222,6 +220,7 @@ class AzureBlob:
             blob_client = self.blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
             with open(upload_file_path, "rb") as data:
                 blob_client.upload_blob(data, max_concurrency=30, timeout=72000)
+                # blob_client.upload_blob(data, max_concurrency=30, timeout=72000, blob_type='AppendBlob')
             return ('Success UploadFile: ' + local_file_name)
         except Exception as e:
             return ('Exception:' + str(e))

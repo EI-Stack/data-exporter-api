@@ -2,7 +2,16 @@ import logging
 import os
 import json
 import requests
-from flask import jsonify, abort, Response, make_response
+from flask import jsonify, abort, Response, make_response, current_app
+
+
+def get_headers():
+    r = requests.get(os.getenv("IFPS_SPC_ETCD_BROKER_API_URL"))
+    if r.status_code not in [200, 201]:
+        return None
+    # print(json.loads(r.text))
+    # print(type(json.loads(r.text)))
+    return json.loads(r.text)
 
 
 class Config:
@@ -12,7 +21,7 @@ class Config:
     IFP_DESK_PASSWORD = os.getenv("IFP_DESK_PASSWORD")
     IFP_DESK_API_URL = os.getenv("IFP_DESK_API_URL")
     SCHEDULER_API_ENABLED = True
-    IFP_DESK_CLIENT_SECRET = os.environ.get('IFP_DESK_CLIENT_SECRET')
+    IFP_DESK_CLIENT_SECRET = get_headers()
 
     MONGODB_URL = os.environ.get('MONGODB_URL')
     MONGODB_USERNAME = os.environ.get('MONGODB_USERNAME')
@@ -73,12 +82,12 @@ class Config:
         existence = os.path.exists(REDIS_PASSWORD_FILE)
         if existence:
             REDIS_PASSWORD = open(REDIS_PASSWORD_FILE).read().rstrip('\n')
-    if IFP_DESK_CLIENT_SECRET is not None:
-        try:
-            IFP_DESK_CLIENT_SECRET = open(IFP_DESK_CLIENT_SECRET).read().rstrip('\n')
-        except:
-            IFP_DESK_CLIENT_SECRET = IFP_DESK_CLIENT_SECRET
-        IFP_DESK_HEADERS = {'X-Ifp-App-Secret': IFP_DESK_CLIENT_SECRET}
+    if IFP_DESK_CLIENT_SECRET is None:
+        # try:
+        #     IFP_DESK_CLIENT_SECRET = open(IFP_DESK_CLIENT_SECRET).read().rstrip('\n')
+        # except:
+        #     IFP_DESK_CLIENT_SECRET = IFP_DESK_CLIENT_SECRET
+        IFP_DESK_HEADERS = {"X-Ifp-App-Secret": "hIePLsJ0wvm7GTD2HpQIcxR", "X-Ifp-Service-Name": "III"}
 
     """ Clound auto combine URL """
     if IFP_DESK_API_URL is None and EXTERNAL is not None:

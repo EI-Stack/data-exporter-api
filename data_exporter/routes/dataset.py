@@ -171,7 +171,7 @@ def get_dataset_file(task_name):
     return data_dict
 
 
-# @dataset_bp.route("/dataset/<parameter_id>", methods=["GET"])
+# @dataset_bp.routes("/dataset/<parameter_id>", methods=["GET"])
 # def get_dataset_file(parameter_id):
 #     if not parameter_id:
 #         raise ValueError("Can not Find parameter_id")

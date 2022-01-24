@@ -242,6 +242,7 @@ def predict_data_metric(pk_task_name=''):
                     {"TaskName": data.get("TaskName")},
                     {"$set": {"Metrics": metric}},
                 )
+                print('if', metric)
             else:
                 task_name = data.get("TaskName")
                 model_repo = ensaas.DATABASE["iii.pafs.modelrepomodel"].find({"tags.TaskName": task_name}).sort(
@@ -262,6 +263,7 @@ def predict_data_metric(pk_task_name=''):
                     "r2": None,
                     "acc": acc,
                 }
+                print('else',metric)
                 task_group.update(
                     {"TaskName": data.get("TaskName")},
                     {"$set": {"Metrics": metric}},

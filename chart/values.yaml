@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: iiicondor/ifps-predict-exporter
+  repository: iiicondor/ifps-predict-dataingester
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.5.2"
+  tag: "0.5.9"
 # 0.4.2 正常版
 
 imagePullSecrets: []
@@ -70,9 +70,9 @@ resources:
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
    limits:
-     cpu: 100m
-     memory: 128Mi
-     ephemeral-storage: 32Mi
+     cpu: 80m
+     memory: 250Mi
+     ephemeral-storage: 100Mi
 
 autoscaling:
   enabled: false
